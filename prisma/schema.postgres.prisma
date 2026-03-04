@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  dishes       Dish[]
+  ratings      Rating[]
+  sessions     Session[]
+}
+
+model Session {
+  token     String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Restaurant {
+  id            String   @id
+  name          String
+  cuisine       String
+  address       String
+  rating        Float    @default(0)
+  priceRange    String   @default("$$")
+  isUserCreated Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  dishes        Dish[]
+}
+
+model Dish {
+  id                      String      @id @default(cuid())
+  name                    String
+  restaurantId            String?
+  customRestaurantName    String?
+  customRestaurantAddress String?
+  description             String
+  price                   Float?
+  rating                  Float       @default(0)
+  reviewCount             Int         @default(0)
+  category                String
+  imageUrl                String?
+  tags                    Json
+  createdById             String
+  createdAt               DateTime    @default(now())
+  restaurant              Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  createdBy               User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  ratings                 Rating[]
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  dishId    String
+  userId    String
+  value     Float
+  createdAt DateTime @default(now())
+  dish      Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([dishId, userId])
+}

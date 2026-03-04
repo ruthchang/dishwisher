@@ -1,36 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DishWisher
 
-## Getting Started
+DishWisher is a multi-user dish sharing app where people can:
 
-First, run the development server:
+- create accounts and log in
+- post dishes with photos
+- rate dishes
+- browse and filter all community dishes
+
+## Tech stack
+
+- Next.js 16 (App Router)
+- TypeScript
+- Prisma
+- SQLite (local development default)
+- Optional S3 image uploads via presigned URLs
+
+## Local development
+
+### 1) Install dependencies
+
+```bash
+npm install
+```
+
+### 2) Configure environment
+
+Copy `.env.example` to `.env` and adjust values as needed:
+
+```bash
+cp .env.example .env
+```
+
+By default, local development uses SQLite:
+
+```env
+DATABASE_URL="file:./dev.db"
+```
+
+### 3) Initialize database
+
+```bash
+npm run db:push
+```
+
+### 4) Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploying with Postgres + S3
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Postgres
 
-## Learn More
+For production, set:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME?schema=public"
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Then generate/push using the Postgres schema:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run db:push:postgres
+```
 
-## Deploy on Vercel
+This command also regenerates Prisma Client for Postgres.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+For local SQLite development, continue using:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run db:push
+```
+
+### S3 uploads (optional but recommended)
+
+Set these env vars:
+
+```env
+S3_REGION="us-west-2"
+S3_BUCKET="your-bucket-name"
+S3_ACCESS_KEY_ID="..."
+S3_SECRET_ACCESS_KEY="..."
+S3_PUBLIC_BASE_URL="https://cdn.yourdomain.com" # optional
+```
+
+If S3 is not configured, image uploads fall back to local base64 storage.
+
+Upload behavior in app:
+
+- user-selected images are automatically resized/compressed client-side
+- final upload payload is capped at 5MB
+- uploaded objects are stored with aggressive cache headers:
+  `Cache-Control: public, max-age=31536000, immutable`
+
+### S3 CORS
+
+Your bucket needs browser PUT support for presigned uploads. Example CORS:
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["PUT", "GET"],
+    "AllowedOrigins": ["https://your-app-domain.com", "http://localhost:3000"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+## Scripts
+
+- `npm run dev` - start dev server
+- `npm run build` - production build
+- `npm run start` - run production server
+- `npm run lint` - lint
+- `npm run db:push` - sync Prisma schema to database
+- `npm run db:generate` - regenerate Prisma client
+- `npm run db:push:postgres` - sync Postgres schema + generate client
+- `npm run db:generate:postgres` - generate Prisma client from Postgres schema
