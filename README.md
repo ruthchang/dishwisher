@@ -12,7 +12,7 @@ DishWisher is a multi-user dish sharing app where people can:
 - Next.js 16 (App Router)
 - TypeScript
 - Prisma
-- SQLite (local development default)
+- PostgreSQL (Supabase-ready)
 - Optional S3 image uploads via presigned URLs
 
 ## Local development
@@ -31,10 +31,11 @@ Copy `.env.example` to `.env` and adjust values as needed:
 cp .env.example .env
 ```
 
-By default, local development uses SQLite:
+By default, this project expects Postgres (same as production):
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME?sslmode=require"
+DIRECT_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME?sslmode=require"
 ```
 
 ### 3) Initialize database
@@ -61,18 +62,16 @@ For production, set:
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME?schema=public"
 ```
 
-Then generate/push using the Postgres schema:
-
-```bash
-npm run db:push:postgres
-```
-
-This command also regenerates Prisma Client for Postgres.
-
-For local SQLite development, continue using:
+Then generate/push:
 
 ```bash
 npm run db:push
+```
+
+For local SQLite development (optional), use:
+
+```bash
+npm run db:push:sqlite
 ```
 
 ### S3 uploads (optional but recommended)
@@ -118,7 +117,9 @@ Your bucket needs browser PUT support for presigned uploads. Example CORS:
 - `npm run build` - production build
 - `npm run start` - run production server
 - `npm run lint` - lint
-- `npm run db:push` - sync Prisma schema to database
-- `npm run db:generate` - regenerate Prisma client
-- `npm run db:push:postgres` - sync Postgres schema + generate client
-- `npm run db:generate:postgres` - generate Prisma client from Postgres schema
+- `npm run db:push` - sync Prisma schema to database (Postgres)
+- `npm run db:generate` - regenerate Prisma client (Postgres)
+- `npm run db:push:postgres` - alias of `db:push`
+- `npm run db:generate:postgres` - alias of `db:generate`
+- `npm run db:push:sqlite` - sync schema to local SQLite (optional)
+- `npm run db:generate:sqlite` - generate Prisma client from SQLite schema (optional)

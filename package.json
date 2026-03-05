@@ -9,8 +9,10 @@
     "lint": "eslint",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:push:postgres": "prisma db push --schema prisma/schema.postgres.prisma",
-    "db:generate:postgres": "prisma generate --schema prisma/schema.postgres.prisma"
+    "db:push:postgres": "prisma db push",
+    "db:generate:postgres": "prisma generate",
+    "db:push:sqlite": "prisma db push --schema prisma/schema.sqlite.prisma",
+    "db:generate:sqlite": "prisma generate --schema prisma/schema.sqlite.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1001.0",

@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -40,23 +39,23 @@ model Restaurant {
 }
 
 model Dish {
-  id                     String      @id @default(cuid())
-  name                   String
-  restaurantId           String?
-  customRestaurantName   String?
+  id                      String      @id @default(cuid())
+  name                    String
+  restaurantId            String?
+  customRestaurantName    String?
   customRestaurantAddress String?
-  description            String
-  price                  Float?
-  rating                 Float       @default(0)
-  reviewCount            Int         @default(0)
-  category               String
-  imageUrl               String?
-  tags                   Json
-  createdById            String
-  createdAt              DateTime    @default(now())
-  restaurant             Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
-  createdBy              User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  ratings                Rating[]
+  description             String
+  price                   Float?
+  rating                  Float       @default(0)
+  reviewCount             Int         @default(0)
+  category                String
+  imageUrl                String?
+  tags                    Json
+  createdById             String
+  createdAt               DateTime    @default(now())
+  restaurant              Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  createdBy               User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  ratings                 Rating[]
 }
 
 model Rating {
