@@ -2,6 +2,29 @@ import { NextResponse } from "next/server";
 import { db, withDbRetry } from "@/lib/db";
 import { createSession, hashPassword, setSessionCookie } from "@/lib/auth";
 
+function classifyAuthDbError(error: unknown): {
+  status: number;
+  message: string;
+} {
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  if (
+    message.includes("p1001") ||
+    message.includes("postgresql connection") ||
+    message.includes("kind: closed") ||
+    message.includes("timed out")
+  ) {
+    return {
+      status: 503,
+      message: "Database is temporarily unavailable. Please try again shortly.",
+    };
+  }
+  return {
+    status: 500,
+    message: "Server error while creating account. Please try again.",
+  };
+}
+
 export async function POST(req: Request) {
   try {
     return await withDbRetry(async () => {
@@ -39,9 +62,7 @@ export async function POST(req: Request) {
     }, 2);
   } catch (error) {
     console.error("[DishWisher] register failed", error);
-    return NextResponse.json(
-      { error: "Server error while creating account. Please try again." },
-      { status: 500 }
-    );
+    const classified = classifyAuthDbError(error);
+    return NextResponse.json({ error: classified.message }, { status: classified.status });
   }
 }
