@@ -108,9 +108,13 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await response.json();
+      const raw = await response.text();
+      const data = raw ? JSON.parse(raw) : {};
       if (!response.ok) {
-        setAuthError(data.error || "Authentication failed.");
+        setAuthError(
+          data.error ||
+            "Authentication failed. Please check your details and try again."
+        );
         return;
       }
       setCurrentUser(data.user);
@@ -119,6 +123,11 @@ export default function Home() {
       setAuthEmail("");
       setAuthPassword("");
       await loadData();
+    } catch (error) {
+      console.error("[DishWisher] auth submit failed", error);
+      setAuthError(
+        "Could not connect to the server. Please try again in a few seconds."
+      );
     } finally {
       setAuthLoading(false);
     }
