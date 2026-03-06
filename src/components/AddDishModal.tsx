@@ -202,16 +202,29 @@ export default function AddDishModal({
       fileUrl,
       debug,
     });
-    const uploadResponse = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": file.type,
-      },
-      body: file,
-    });
+    let uploadResponse: Response;
+    try {
+      uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(
+        `Image upload could not reach S3 (${message}). Check bucket CORS AllowedOrigins for this app origin and ensure PUT is allowed.`
+      );
+    }
 
     if (!uploadResponse.ok) {
-      throw new Error("Upload failed. Check S3 bucket CORS and permissions.");
+      const responseBody = await uploadResponse.text().catch(() => "");
+      throw new Error(
+        `Upload failed (${uploadResponse.status}). Check S3 bucket CORS and IAM PutObject permissions.${
+          responseBody ? ` S3 response: ${responseBody.slice(0, 200)}` : ""
+        }`
+      );
     }
 
     console.debug("[DishWisher] upload complete", {

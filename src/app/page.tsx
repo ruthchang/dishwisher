@@ -341,12 +341,14 @@ export default function Home() {
             >
               {showFilters ? "Hide Filters" : "Filters"}
             </button>
-            <button
-              onClick={() => setShowAddDish(true)}
-              className="px-3.5 py-2 text-sm font-semibold rounded-md bg-[#0f766e] text-white hover:bg-[#0b5f58] transition-colors"
-            >
-              Add Dish
-            </button>
+            {currentUser && (
+              <button
+                onClick={() => setShowAddDish(true)}
+                className="px-3.5 py-2 text-sm font-semibold rounded-md bg-[#0f766e] text-white hover:bg-[#0b5f58] transition-colors"
+              >
+                Add Dish
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -406,12 +408,21 @@ export default function Home() {
                     <p className="text-[#5b463f] mb-6">
                       Start adding your favorite dishes with photos
                     </p>
-                    <button
-                      onClick={() => setShowAddDish(true)}
-                      className="px-6 py-3 rounded-md bg-[#0f766e] text-white font-semibold hover:bg-[#0b5f58]"
-                    >
-                      Add Your First Dish
-                    </button>
+                    {currentUser ? (
+                      <button
+                        onClick={() => setShowAddDish(true)}
+                        className="px-6 py-3 rounded-md bg-[#0f766e] text-white font-semibold hover:bg-[#0b5f58]"
+                      >
+                        Add Your First Dish
+                      </button>
+                    ) : (
+                      <button
+                        onClick={openAuthForAction}
+                        className="px-6 py-3 rounded-md bg-[#0f766e] text-white font-semibold hover:bg-[#0b5f58]"
+                      >
+                        Log In to Add a Dish
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>

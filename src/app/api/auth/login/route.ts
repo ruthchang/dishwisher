@@ -23,6 +23,16 @@ function classifyAuthDbError(error: unknown): {
       message: "Database is temporarily unavailable. Please try again shortly.",
     };
   }
+  if (
+    message.includes("the url must start with the protocol `file:`") ||
+    message.includes("provider = \"sqlite\"")
+  ) {
+    return {
+      status: 500,
+      message:
+        "Prisma client/schema mismatch detected. Run `npm run db:generate` for Postgres and restart the dev server.",
+    };
+  }
   return {
     status: 500,
     message: "Server error while logging in. Please try again.",
