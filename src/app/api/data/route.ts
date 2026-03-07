@@ -61,6 +61,7 @@ export async function GET() {
     createdById: dish.createdById,
     customRestaurantName: dish.customRestaurantName ?? undefined,
     customRestaurantAddress: dish.customRestaurantAddress ?? undefined,
+    yelpBusinessUrl: dish.yelpBusinessUrl ?? undefined,
     description: dish.description,
     price: dish.price,
     rating: dish.rating,

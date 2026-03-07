@@ -7,6 +7,10 @@ function customRestaurantId(name: string): string {
   return `custom-${name.toLowerCase().replace(/\s+/g, "-")}`;
 }
 
+function yelpRestaurantId(yelpBusinessId: string): string {
+  return `yelp-${yelpBusinessId}`;
+}
+
 export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,8 +22,10 @@ export async function POST(req: Request) {
 
   const tags = Array.isArray(body.tags) ? body.tags : [];
   const isCustom = body.restaurantId.startsWith("custom-");
+  const isYelp = body.restaurantId.startsWith("yelp-");
   const restaurantName = body.customRestaurantName?.trim() || "";
   const restaurantAddress = body.customRestaurantAddress?.trim() || "";
+  const restaurantCuisine = body.customRestaurantCuisine?.trim() || "Restaurant";
 
   let restaurantId = body.restaurantId;
   if (isCustom && restaurantName) {
@@ -41,6 +47,30 @@ export async function POST(req: Request) {
       },
     });
   }
+  if (isYelp && restaurantName) {
+    const parsedYelpId = body.restaurantId.replace(/^yelp-/, "").trim();
+    if (parsedYelpId) {
+      restaurantId = yelpRestaurantId(parsedYelpId);
+      await db.restaurant.upsert({
+        where: { id: restaurantId },
+        update: {
+          name: restaurantName,
+          address: restaurantAddress,
+          cuisine: restaurantCuisine,
+          isUserCreated: false,
+        },
+        create: {
+          id: restaurantId,
+          name: restaurantName,
+          address: restaurantAddress,
+          cuisine: restaurantCuisine,
+          rating: 0,
+          priceRange: "$$",
+          isUserCreated: false,
+        },
+      });
+    }
+  }
 
   const dish = await db.dish.create({
     data: {
@@ -48,6 +78,7 @@ export async function POST(req: Request) {
       restaurantId,
       customRestaurantName: restaurantName || null,
       customRestaurantAddress: restaurantAddress || null,
+      yelpBusinessUrl: body.yelpBusinessUrl?.trim() || null,
       description: body.description?.trim() || "",
       price: body.price ?? null,
       category: body.category.trim(),

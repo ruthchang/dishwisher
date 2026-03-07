@@ -14,6 +14,8 @@ export interface Dish {
   createdById?: string;
   customRestaurantName?: string;
   customRestaurantAddress?: string;
+  customRestaurantCuisine?: string;
+  yelpBusinessUrl?: string;
   description: string;
   price: number | null;
   rating: number;

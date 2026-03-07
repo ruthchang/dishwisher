@@ -423,7 +423,7 @@ export default function Home() {
 
           <section>
             {filteredAndSortedDishes.length === 0 ? (
-              <div className="cozy-card rounded-xl p-10 text-center">
+              <div className="panel-card rounded-xl p-10 text-center">
                 {allDishes.length === 0 ? (
                   <>
                     <h3 className="text-xl font-bold text-[#3e2723] mb-2">
@@ -477,11 +477,7 @@ export default function Home() {
                       isUserDish={dish.createdById === currentUser?.id}
                       onDelete={handleDeleteDish}
                       onEdit={handleStartEdit}
-                      customRestaurant={
-                        dish.restaurantId.startsWith("custom-")
-                          ? userRestaurants[dish.restaurantId]
-                          : undefined
-                      }
+                      customRestaurant={userRestaurants[dish.restaurantId]}
                     />
                   ))}
                 </div>
@@ -511,7 +507,7 @@ export default function Home() {
 
       {showAuth && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="cozy-card rounded-xl w-full max-w-md p-6">
+          <div className="panel-card rounded-xl w-full max-w-md p-6">
             <h2 className="text-xl font-bold text-[#2d1f1a]">
               {authMode === "login" ? "Log in" : "Create account"}
             </h2>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { restaurants, Dish } from "@/data/dishes";
 import StarRating from "./StarRating";
+import RotatableImage from "./RotatableImage";
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 1600;
@@ -16,6 +17,14 @@ interface AddDishModalProps {
   editingDish?: Dish | null;
   existingCategories: string[];
   existingTags: string[];
+}
+
+interface YelpRestaurantMatch {
+  id: string;
+  name: string;
+  address: string;
+  cuisine: string;
+  yelpUrl: string;
 }
 
 export default function AddDishModal({
@@ -43,6 +52,16 @@ export default function AddDishModal({
   const [customRestaurantAddress, setCustomRestaurantAddress] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState("");
+  const [searchCoords, setSearchCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [yelpLoading, setYelpLoading] = useState(false);
+  const [yelpError, setYelpError] = useState("");
+  const [yelpMatches, setYelpMatches] = useState<YelpRestaurantMatch[]>([]);
+  const [selectedYelpMatch, setSelectedYelpMatch] = useState<YelpRestaurantMatch | null>(
+    null
+  );
 
   const readImageDimensions = (
     file: File
@@ -129,6 +148,8 @@ export default function AddDishModal({
       setImageError("");
       setCustomRestaurantAddress(editingDish.customRestaurantAddress || "");
       setLocationError("");
+      setYelpError("");
+      setYelpMatches([]);
 
       if (existingCategories.includes(editingDish.category)) {
         setCategory(editingDish.category);
@@ -138,7 +159,10 @@ export default function AddDishModal({
         setCustomCategory(editingDish.category);
       }
 
-      if (editingDish.restaurantId.startsWith("custom-")) {
+      if (
+        editingDish.restaurantId.startsWith("custom-") ||
+        editingDish.restaurantId.startsWith("yelp-")
+      ) {
         setUseCustomRestaurant(true);
         const restaurantName =
           editingDish.customRestaurantName ||
@@ -149,10 +173,22 @@ export default function AddDishModal({
             .join(" ");
         setCustomRestaurant(restaurantName);
         setRestaurantId("");
+        if (editingDish.restaurantId.startsWith("yelp-")) {
+          setSelectedYelpMatch({
+            id: editingDish.restaurantId.replace(/^yelp-/, ""),
+            name: restaurantName,
+            address: editingDish.customRestaurantAddress || "",
+            cuisine: editingDish.customRestaurantCuisine || "Restaurant",
+            yelpUrl: editingDish.yelpBusinessUrl || "",
+          });
+        } else {
+          setSelectedYelpMatch(null);
+        }
       } else {
         setUseCustomRestaurant(false);
         setRestaurantId(editingDish.restaurantId);
         setCustomRestaurant("");
+        setSelectedYelpMatch(null);
       }
     }
   }, [editingDish, isOpen, existingCategories]);
@@ -174,6 +210,11 @@ export default function AddDishModal({
     setCustomRestaurantAddress("");
     setLocationError("");
     setLocationLoading(false);
+    setSearchCoords(null);
+    setYelpLoading(false);
+    setYelpError("");
+    setYelpMatches([]);
+    setSelectedYelpMatch(null);
   };
 
   const uploadImageToS3 = async (file: File): Promise<string | null> => {
@@ -318,6 +359,73 @@ export default function AddDishModal({
     return "Could not get your location. Check browser and OS location settings.";
   };
 
+  const getBestEffortCoordinates = async (): Promise<{
+    latitude: number;
+    longitude: number;
+  } | null> => {
+    if (searchCoords) return searchCoords;
+    if (!navigator.geolocation) return null;
+    try {
+      const position = await getCurrentPosition({
+        enableHighAccuracy: false,
+        timeout: 7000,
+        maximumAge: 5 * 60 * 1000,
+      });
+      const coords = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      };
+      setSearchCoords(coords);
+      return coords;
+    } catch {
+      return null;
+    }
+  };
+
+  const searchYelpRestaurants = async () => {
+    const query = customRestaurant.trim();
+    if (query.length < 2) {
+      setYelpError("Type at least 2 characters to search Yelp.");
+      return;
+    }
+
+    setYelpLoading(true);
+    setYelpError("");
+    setYelpMatches([]);
+
+    try {
+      const coords = await getBestEffortCoordinates();
+      const params = new URLSearchParams({ q: query });
+      if (coords) {
+        params.set("lat", String(coords.latitude));
+        params.set("lng", String(coords.longitude));
+      }
+      const response = await fetch(`/api/restaurants/search?${params.toString()}`);
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Could not search Yelp right now.");
+      }
+      const matches = Array.isArray(payload.matches) ? payload.matches : [];
+      setYelpMatches(matches);
+      if (matches.length === 0) {
+        setYelpError("No Yelp matches found nearby. You can still enter manually.");
+      }
+    } catch (error) {
+      setYelpError(
+        error instanceof Error ? error.message : "Could not search Yelp right now."
+      );
+    } finally {
+      setYelpLoading(false);
+    }
+  };
+
+  const selectYelpMatch = (match: YelpRestaurantMatch) => {
+    setSelectedYelpMatch(match);
+    setCustomRestaurant(match.name);
+    setCustomRestaurantAddress(match.address);
+    setYelpError("");
+  };
+
   const handleUseCurrentLocation = async () => {
     if (!navigator.geolocation) {
       setLocationError("Location is not supported in this browser.");
@@ -350,6 +458,7 @@ export default function AddDishModal({
       }
 
       const { latitude, longitude } = position.coords;
+      setSearchCoords({ latitude, longitude });
       try {
         const locationText = await reverseGeocode(latitude, longitude);
         setCustomRestaurantAddress(locationText);
@@ -368,8 +477,13 @@ export default function AddDishModal({
     e.preventDefault();
 
     const finalCategory = category === "__custom__" ? customCategory : category;
+    const manualRestaurantId = `custom-${customRestaurant
+      .toLowerCase()
+      .replace(/\s+/g, "-")}`;
     const finalRestaurantId = useCustomRestaurant
-      ? `custom-${customRestaurant.toLowerCase().replace(/\s+/g, "-")}`
+      ? selectedYelpMatch
+        ? `yelp-${selectedYelpMatch.id}`
+        : manualRestaurantId
       : restaurantId;
 
     const dish: Dish = {
@@ -380,6 +494,8 @@ export default function AddDishModal({
       customRestaurantAddress: useCustomRestaurant
         ? customRestaurantAddress.trim() || undefined
         : undefined,
+      customRestaurantCuisine: selectedYelpMatch?.cuisine || undefined,
+      yelpBusinessUrl: selectedYelpMatch?.yelpUrl || undefined,
       description: description.trim(),
       price: price ? parseFloat(price) : null,
       rating: rating,
@@ -428,10 +544,10 @@ export default function AddDishModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="cozy-card rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className="panel-card rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-[#0f766e] via-[#14b8a6] to-[#99f6e4] px-6 py-5 flex items-center justify-between rounded-t-3xl">
-          <h2 className="text-xl font-bold text-white cozy-text-shadow">
+          <h2 className="text-xl font-bold text-white accent-text-shadow">
             {isEditing ? "Edit Dish" : "Add Dish"}
           </h2>
           <button
@@ -487,7 +603,12 @@ export default function AddDishModal({
                 <input
                   type="radio"
                   checked={!useCustomRestaurant}
-                  onChange={() => setUseCustomRestaurant(false)}
+                  onChange={() => {
+                    setUseCustomRestaurant(false);
+                    setYelpMatches([]);
+                    setYelpError("");
+                    setSelectedYelpMatch(null);
+                  }}
                   className="w-4 h-4 accent-[#0f766e]"
                 />
                 Existing Spot
@@ -496,7 +617,10 @@ export default function AddDishModal({
                 <input
                   type="radio"
                   checked={useCustomRestaurant}
-                  onChange={() => setUseCustomRestaurant(true)}
+                  onChange={() => {
+                    setUseCustomRestaurant(true);
+                    setYelpError("");
+                  }}
                   className="w-4 h-4 accent-[#0f766e]"
                 />
                 New Place
@@ -507,10 +631,74 @@ export default function AddDishModal({
                 <input
                   type="text"
                   value={customRestaurant}
-                  onChange={(e) => setCustomRestaurant(e.target.value)}
+                  onChange={(e) => {
+                    setCustomRestaurant(e.target.value);
+                    setSelectedYelpMatch(null);
+                  }}
                   placeholder="Where did you find this gem?"
                   className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
                 />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={searchYelpRestaurants}
+                    disabled={yelpLoading}
+                    className="px-3.5 py-2 text-xs font-semibold rounded-md border border-[#d6d3d1] text-[#3e2723] hover:bg-[#f7f7f5] disabled:opacity-60"
+                  >
+                    {yelpLoading ? "Searching..." : "Find Nearby on Yelp"}
+                  </button>
+                  <span className="text-xs text-[#78716c]">
+                    For matching only. Data from Yelp.
+                  </span>
+                </div>
+                {selectedYelpMatch && (
+                  <div className="text-xs text-[#0f766e] bg-[#ecfeff] border border-[#99f6e4] rounded-md px-3 py-2">
+                    Matched to Yelp listing: {selectedYelpMatch.name}
+                    {selectedYelpMatch.yelpUrl && (
+                      <>
+                        {" "}
+                        •{" "}
+                        <a
+                          href={selectedYelpMatch.yelpUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline hover:text-[#0b5f58]"
+                        >
+                          View on Yelp
+                        </a>
+                      </>
+                    )}
+                  </div>
+                )}
+                {yelpMatches.length > 0 && (
+                  <div className="rounded-xl border border-[#e7e5e4] bg-white overflow-hidden">
+                    {yelpMatches.map((match) => (
+                      <button
+                        key={match.id}
+                        type="button"
+                        onClick={() => selectYelpMatch(match)}
+                        className="w-full text-left px-3 py-2.5 border-b last:border-b-0 border-[#f0efed] hover:bg-[#f7f7f5]"
+                      >
+                        <p className="text-sm font-semibold text-[#2d1f1a]">{match.name}</p>
+                        <p className="text-xs text-[#5b463f]">{match.address}</p>
+                      </button>
+                    ))}
+                    <div className="px-3 py-2 text-[11px] text-[#78716c] bg-[#fafaf9] border-t border-[#f0efed]">
+                      Powered by{" "}
+                      <a
+                        href="https://www.yelp.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline hover:text-[#5b463f]"
+                      >
+                        Yelp
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {yelpError && (
+                  <p className="text-xs text-[#b91c1c]">{yelpError}</p>
+                )}
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
@@ -538,7 +726,7 @@ export default function AddDishModal({
                 onChange={(e) => setRestaurantId(e.target.value)}
                 className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] cursor-pointer"
               >
-                <option value="">Pick a cozy spot...</option>
+                <option value="">Pick a restaurant...</option>
                 {restaurants.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
@@ -598,15 +786,14 @@ export default function AddDishModal({
             {imageUrl && (
               <div className="mt-3 relative">
                 <div className="aspect-video rounded-2xl overflow-hidden bg-[#f7f7f5] border-2 border-[#e7e5e4]">
-                  <img
+                  <RotatableImage
+                    key={isEditing && editingDish ? `modal:${editingDish.id}` : "modal:new"}
                     src={imageUrl}
                     alt="Preview"
                     className="w-full h-full object-cover"
+                    storageKey={isEditing && editingDish ? `modal:${editingDish.id}` : "modal:new"}
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                    onLoad={(e) => {
-                      (e.target as HTMLImageElement).style.display = "block";
                     }}
                   />
                 </div>
@@ -767,7 +954,7 @@ export default function AddDishModal({
             <button
               type="submit"
               disabled={!isValid}
-              className="flex-1 px-4 py-3.5 cozy-btn rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="flex-1 px-4 py-3.5 primary-btn rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {isEditing ? "Save Changes" : "Add Dish"}
             </button>

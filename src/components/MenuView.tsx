@@ -2,6 +2,7 @@
 
 import { Dish, Restaurant } from "@/data/dishes";
 import StarRating from "./StarRating";
+import RotatableImage from "./RotatableImage";
 
 interface MenuViewProps {
   dishes: Dish[];
@@ -62,6 +63,7 @@ export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
         );
 
         const categories = sortCategories(Object.keys(dishesByCategory));
+        const yelpUrl = restaurantDishes.find((dish) => dish.yelpBusinessUrl)?.yelpBusinessUrl;
 
         return (
           <article
@@ -78,6 +80,23 @@ export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
               {(restaurant?.cuisine || restaurant?.address) && (
                 <p className="text-sm text-[#5b463f] mt-1">
                   {[restaurant?.cuisine, restaurant?.address].filter(Boolean).join(" • ")}
+                </p>
+              )}
+              {restaurantId.startsWith("yelp-") && (
+                <p className="text-xs text-[#78716c] mt-1">
+                  Location matched from{" "}
+                  {yelpUrl ? (
+                    <a
+                      href={yelpUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline text-[#0f766e] hover:text-[#0b5f58]"
+                    >
+                      Yelp
+                    </a>
+                  ) : (
+                    "Yelp"
+                  )}
                 </p>
               )}
             </header>
@@ -121,11 +140,12 @@ export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
                           </div>
                           <div className="w-[80px] h-[60px] sm:w-[96px] sm:h-[72px] rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4] justify-self-end">
                             {dish.imageUrl ? (
-                              <img
+                              <RotatableImage
+                                key={`menu:${dish.id}`}
                                 src={dish.imageUrl}
                                 alt={dish.name}
                                 className="w-full h-full object-cover"
-                                loading="lazy"
+                                storageKey={`menu:${dish.id}`}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[10px] uppercase tracking-wide text-[#a8a29e]">

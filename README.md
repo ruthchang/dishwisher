@@ -84,9 +84,21 @@ S3_BUCKET="your-bucket-name"
 S3_ACCESS_KEY_ID="..."
 S3_SECRET_ACCESS_KEY="..."
 S3_PUBLIC_BASE_URL="https://cdn.yourdomain.com" # optional
+YELP_API_KEY="..." # optional, enables official Yelp restaurant matching
 ```
 
 If S3 is not configured, image uploads fall back to local base64 storage.
+
+### Yelp restaurant matching (optional)
+
+When `YELP_API_KEY` is set, Add Dish supports "Find Nearby on Yelp" to match a typed
+restaurant name to an official business ID for location consistency.
+
+Implementation notes:
+
+- Yelp lookups happen server-side via `/api/restaurants/search` (key never exposed client-side)
+- app displays Yelp attribution when Yelp-sourced locations are shown
+- intended for matching/location identity, not importing Yelp reviews into app ratings
 
 Upload behavior in app:
 

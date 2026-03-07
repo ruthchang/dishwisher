@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Dish, getRestaurantById, Restaurant } from "@/data/dishes";
 import StarRating from "./StarRating";
+import RotatableImage from "./RotatableImage";
 
 interface DishCardProps {
   dish: Dish;
@@ -44,7 +45,7 @@ export default function DishCard({
 
   return (
     <div
-      className={`cozy-card rounded-xl overflow-hidden ${
+      className={`panel-card rounded-xl overflow-hidden ${
         isUserDish ? "ring-2 ring-[#ccfbf1]" : ""
       }`}
     >
@@ -60,12 +61,16 @@ export default function DishCard({
         <div className="flex gap-4">
           <div className="w-32 h-24 sm:w-44 sm:h-32 shrink-0 rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4]">
             {dish.imageUrl ? (
-              <img
+              <RotatableImage
+                key={`dish-card:${dish.id}`}
                 src={dish.imageUrl}
                 alt={dish.name}
                 className="w-full h-full object-cover"
+                storageKey={`dish-card:${dish.id}`}
                 onError={(e) => {
-                  (e.target as HTMLImageElement).parentElement!.style.display = "none";
+                  (
+                    (e.target as HTMLImageElement).parentElement?.parentElement as HTMLElement | null
+                  )?.style.setProperty("display", "none");
                 }}
               />
             ) : null}
@@ -150,6 +155,19 @@ export default function DishCard({
                 {restaurant.address}
               </div>
             )}
+            {dish.restaurantId.startsWith("yelp-") && dish.yelpBusinessUrl && (
+              <div className="text-xs text-[#78716c] mb-3">
+                Location matched from{" "}
+                <a
+                  href={dish.yelpBusinessUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline text-[#0f766e] hover:text-[#0b5f58]"
+                >
+                  Yelp
+                </a>
+              </div>
+            )}
 
             <div className="flex items-center gap-3 text-sm text-[#5b463f] mb-4 flex-wrap">
               {restaurant?.cuisine && (
@@ -197,7 +215,7 @@ export default function DishCard({
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="cozy-card rounded-3xl max-w-sm w-full p-6 text-center">
+          <div className="panel-card rounded-3xl max-w-sm w-full p-6 text-center">
             <h3 className="text-lg font-bold text-[#3e2723] mb-2">
               Remove this dish?
             </h3>

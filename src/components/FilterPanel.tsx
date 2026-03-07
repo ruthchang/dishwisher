@@ -63,7 +63,7 @@ export default function FilterPanel({
   };
 
   return (
-    <div className="cozy-card rounded-xl p-4">
+    <div className="panel-card rounded-xl p-4">
       {/* Header */}
       <div className="mb-4 pb-3 border-b border-[#e7e5e4]">
         <h2 className="font-bold text-base text-[#3e2723]">Filter Results</h2>
@@ -101,7 +101,7 @@ export default function FilterPanel({
           onChange={(e) => onRestaurantChange(e.target.value)}
           className="w-full px-3 py-2.5 bg-white border border-[#d6d3d1] rounded-md focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] cursor-pointer"
         >
-          <option value="">All Cozy Spots</option>
+          <option value="">All Restaurants</option>
           {restaurants.map((restaurant) => (
             <option key={restaurant.id} value={restaurant.id}>
               {restaurant.name}
