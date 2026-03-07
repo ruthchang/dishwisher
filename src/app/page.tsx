@@ -8,6 +8,7 @@ import {
 import DishCard from "@/components/DishCard";
 import FilterPanel from "@/components/FilterPanel";
 import AddDishModal from "@/components/AddDishModal";
+import MenuView from "@/components/MenuView";
 
 interface UserRestaurantData {
   [id: string]: Restaurant & { isUserCreated?: true };
@@ -34,6 +35,7 @@ export default function Home() {
   const [minRating, setMinRating] = useState(0);
   const [userRatings, setUserRatings] = useState<Record<string, number>>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<"cards" | "menu">("cards");
   const [mounted, setMounted] = useState(false);
   const [showAddDish, setShowAddDish] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
@@ -341,6 +343,28 @@ export default function Home() {
             >
               {showFilters ? "Hide Filters" : "Filters"}
             </button>
+            <div className="flex items-center rounded-md border border-[#d6d3d1] overflow-hidden">
+              <button
+                onClick={() => setViewMode("cards")}
+                className={`px-3 py-2 text-sm font-semibold transition-colors ${
+                  viewMode === "cards"
+                    ? "bg-[#0f766e] text-white"
+                    : "bg-white text-[#3e2723] hover:bg-[#f7f7f5]"
+                }`}
+              >
+                Dishes
+              </button>
+              <button
+                onClick={() => setViewMode("menu")}
+                className={`px-3 py-2 text-sm font-semibold transition-colors ${
+                  viewMode === "menu"
+                    ? "bg-[#0f766e] text-white"
+                    : "bg-white text-[#3e2723] hover:bg-[#f7f7f5]"
+                }`}
+              >
+                Menu
+              </button>
+            </div>
             {currentUser && (
               <button
                 onClick={() => setShowAddDish(true)}
@@ -442,24 +466,31 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              <div className="space-y-4">
-                {filteredAndSortedDishes.map((dish) => (
-                  <DishCard
-                    key={dish.id}
-                    dish={dish}
-                    onRate={handleRateDish}
-                    userRating={mounted ? userRatings[dish.id] : undefined}
-                    isUserDish={dish.createdById === currentUser?.id}
-                    onDelete={handleDeleteDish}
-                    onEdit={handleStartEdit}
-                    customRestaurant={
-                      dish.restaurantId.startsWith("custom-")
-                        ? userRestaurants[dish.restaurantId]
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
+              viewMode === "cards" ? (
+                <div className="space-y-4">
+                  {filteredAndSortedDishes.map((dish) => (
+                    <DishCard
+                      key={dish.id}
+                      dish={dish}
+                      onRate={handleRateDish}
+                      userRating={mounted ? userRatings[dish.id] : undefined}
+                      isUserDish={dish.createdById === currentUser?.id}
+                      onDelete={handleDeleteDish}
+                      onEdit={handleStartEdit}
+                      customRestaurant={
+                        dish.restaurantId.startsWith("custom-")
+                          ? userRestaurants[dish.restaurantId]
+                          : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              ) : (
+                <MenuView
+                  dishes={filteredAndSortedDishes}
+                  restaurantsById={userRestaurants}
+                />
+              )
             )}
           </section>
         </div>
