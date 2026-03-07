@@ -362,7 +362,7 @@ export default function Home() {
                     : "bg-white text-[#3e2723] hover:bg-[#f7f7f5]"
                 }`}
               >
-                Menu
+                Menus
               </button>
             </div>
             {currentUser && (

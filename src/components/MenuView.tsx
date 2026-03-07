@@ -64,9 +64,15 @@ export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
         const categories = sortCategories(Object.keys(dishesByCategory));
 
         return (
-          <article key={restaurantId} className="cozy-card rounded-xl p-5 sm:p-6">
-            <header className="border-b border-[#e7e5e4] pb-3 mb-4">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#2d1f1a]">
+          <article
+            key={restaurantId}
+            className="rounded-xl p-5 sm:p-6 border border-[#e7e5e4] shadow-[0_8px_24px_rgba(62,39,35,0.06)] bg-[linear-gradient(180deg,#fffefb_0%,#fff_100%)]"
+          >
+            <header className="text-center border-b border-[#e7e5e4] pb-4 mb-5">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[#78716c]">
+                House Menu
+              </p>
+              <h2 className="mt-1 text-2xl sm:text-3xl font-bold text-[#2d1f1a]">
                 {restaurant?.name || "Custom Restaurant"}
               </h2>
               {(restaurant?.cuisine || restaurant?.address) && (
@@ -76,33 +82,44 @@ export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
               )}
             </header>
 
-            <div className="space-y-5">
+            <div className="space-y-6">
               {categories.map((category) => (
                 <section key={category}>
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-[#0f766e] mb-2">
-                    {category}
-                  </h3>
-                  <div className="divide-y divide-[#eceae8] border border-[#eceae8] rounded-lg overflow-hidden">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-[#0f766e] whitespace-nowrap">
+                      {category}
+                    </h3>
+                    <div className="h-px w-full bg-[#d6d3d1]" />
+                  </div>
+                  <div className="rounded-lg overflow-hidden bg-white border border-[#eceae8]">
                     {dishesByCategory[category]
                       .slice()
                       .sort((a, b) => a.name.localeCompare(b.name))
                       .map((dish) => (
                         <div
                           key={dish.id}
-                          className="grid grid-cols-[minmax(0,1fr)_84px] gap-3 p-3 sm:p-4 bg-white"
+                          className="grid grid-cols-[minmax(0,1fr)_80px] sm:grid-cols-[minmax(0,1fr)_96px] gap-3 px-3 py-3 sm:px-4 sm:py-3.5 border-b border-[#f0efed] last:border-b-0"
                         >
                           <div className="min-w-0">
-                            <p className="font-semibold text-[#2d1f1a] truncate">{dish.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <StarRating rating={dish.rating} size="sm" showValue />
+                            <div className="flex items-baseline gap-2 min-w-0">
+                              <p className="font-semibold text-[#2d1f1a] truncate">{dish.name}</p>
+                              <span className="flex-1 border-b border-dotted border-[#cfcac7] translate-y-[-2px]" />
                               {dish.price !== null && (
-                                <span className="text-sm font-semibold text-[#0f766e]">
+                                <span className="text-sm font-bold text-[#0f766e] whitespace-nowrap">
                                   ${dish.price.toFixed(2)}
                                 </span>
                               )}
                             </div>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <StarRating rating={dish.rating} size="sm" showValue />
+                              {dish.description && (
+                                <p className="hidden sm:block text-xs text-[#78716c] truncate italic">
+                                  {dish.description}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div className="w-[84px] h-[64px] rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4] justify-self-end">
+                          <div className="w-[80px] h-[60px] sm:w-[96px] sm:h-[72px] rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4] justify-self-end">
                             {dish.imageUrl ? (
                               <img
                                 src={dish.imageUrl}
@@ -110,7 +127,11 @@ export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                               />
-                            ) : null}
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] uppercase tracking-wide text-[#a8a29e]">
+                                No Photo
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
