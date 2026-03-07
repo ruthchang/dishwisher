@@ -45,6 +45,7 @@ model Dish {
   restaurantId           String?
   customRestaurantName   String?
   customRestaurantAddress String?
+  yelpBusinessUrl        String?
   description            String
   price                  Float?
   rating                 Float       @default(0)
