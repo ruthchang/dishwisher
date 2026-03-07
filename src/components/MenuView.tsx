@@ -139,19 +139,13 @@ export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
                             </div>
                           </div>
                           <div className="w-[80px] h-[60px] sm:w-[96px] sm:h-[72px] rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4] justify-self-end">
-                            {dish.imageUrl ? (
-                              <RotatableImage
-                                key={`menu:${dish.id}`}
-                                src={dish.imageUrl}
-                                alt={dish.name}
-                                className="w-full h-full object-cover"
-                                storageKey={`menu:${dish.id}`}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-[10px] uppercase tracking-wide text-[#a8a29e]">
-                                No Photo
-                              </div>
-                            )}
+                            <RotatableImage
+                              key={`menu:${dish.id}`}
+                              src={dish.imageUrl || "/dishwisher-d-mark.svg"}
+                              alt={dish.name}
+                              className="w-full h-full object-cover"
+                              storageKey={`menu:${dish.id}`}
+                            />
                           </div>
                         </div>
                       ))}

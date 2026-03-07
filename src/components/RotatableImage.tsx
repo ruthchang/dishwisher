@@ -8,6 +8,7 @@ interface RotatableImageProps {
   alt: string;
   className?: string;
   storageKey: string;
+  fallbackSrc?: string;
   onError?: ReactEventHandler<HTMLImageElement>;
 }
 
@@ -16,6 +17,7 @@ export default function RotatableImage({
   alt,
   className = "",
   storageKey,
+  fallbackSrc = "/dishwisher-d-mark.svg",
   onError,
 }: RotatableImageProps) {
   const localStorageKey = useMemo(
@@ -35,6 +37,11 @@ export default function RotatableImage({
   };
 
   const [rotation, setRotation] = useState<number>(readInitialRotation);
+  const [displaySrc, setDisplaySrc] = useState(src);
+
+  useEffect(() => {
+    setDisplaySrc(src);
+  }, [src]);
 
   useEffect(() => {
     try {
@@ -47,11 +54,16 @@ export default function RotatableImage({
   return (
     <div className="relative w-full h-full">
       <img
-        src={src}
+        src={displaySrc}
         alt={alt}
         className={`${className} transition-transform duration-200`}
         style={{ transform: `rotate(${rotation}deg)` }}
-        onError={onError}
+        onError={(e) => {
+          if (displaySrc !== fallbackSrc) {
+            setDisplaySrc(fallbackSrc);
+          }
+          onError?.(e);
+        }}
       />
       <button
         type="button"

@@ -60,20 +60,13 @@ export default function DishCard({
       <div className="p-4 sm:p-5">
         <div className="flex gap-4">
           <div className="w-32 h-24 sm:w-44 sm:h-32 shrink-0 rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4]">
-            {dish.imageUrl ? (
-              <RotatableImage
-                key={`dish-card:${dish.id}`}
-                src={dish.imageUrl}
-                alt={dish.name}
-                className="w-full h-full object-cover"
-                storageKey={`dish-card:${dish.id}`}
-                onError={(e) => {
-                  (
-                    (e.target as HTMLImageElement).parentElement?.parentElement as HTMLElement | null
-                  )?.style.setProperty("display", "none");
-                }}
-              />
-            ) : null}
+            <RotatableImage
+              key={`dish-card:${dish.id}`}
+              src={dish.imageUrl || "/dishwisher-d-mark.svg"}
+              alt={dish.name}
+              className="w-full h-full object-cover"
+              storageKey={`dish-card:${dish.id}`}
+            />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
