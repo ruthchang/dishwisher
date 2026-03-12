@@ -3,10 +3,14 @@
 import { Dish, Restaurant } from "@/data/dishes";
 import StarRating from "./StarRating";
 import RotatableImage from "./RotatableImage";
+import WishFavoriteControls from "./WishFavoriteControls";
 
 interface MenuViewProps {
   dishes: Dish[];
   restaurantsById: Record<string, Restaurant>;
+  dishPreferences?: Record<string, { wishlisted: boolean; favorited: boolean }>;
+  onToggleWishlist?: (dishId: string, value: boolean) => void;
+  onToggleFavorite?: (dishId: string, value: boolean) => void;
 }
 
 const CATEGORY_ORDER = [
@@ -36,7 +40,13 @@ function sortCategories(categories: string[]): string[] {
   });
 }
 
-export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
+export default function MenuView({
+  dishes,
+  restaurantsById,
+  dishPreferences = {},
+  onToggleWishlist,
+  onToggleFavorite,
+}: MenuViewProps) {
   const dishesByRestaurant = dishes.reduce<Record<string, Dish[]>>((acc, dish) => {
     if (!acc[dish.restaurantId]) acc[dish.restaurantId] = [];
     acc[dish.restaurantId].push(dish);
@@ -114,15 +124,32 @@ export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
                     {dishesByCategory[category]
                       .slice()
                       .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((dish) => (
-                        <div
-                          key={dish.id}
-                          className="grid grid-cols-[minmax(0,1fr)_80px] sm:grid-cols-[minmax(0,1fr)_96px] gap-3 px-3 py-3 sm:px-4 sm:py-3.5 border-b border-[#f0efed] last:border-b-0"
-                        >
-                          <div className="min-w-0">
-                            <div className="flex items-baseline gap-2 min-w-0">
+                      .map((dish) => {
+                        return (
+                          <div
+                            key={dish.id}
+                            className="grid grid-cols-[minmax(0,1fr)_80px] sm:grid-cols-[minmax(0,1fr)_96px] gap-3 px-3 py-3 sm:px-4 sm:py-3.5 border-b border-[#f0efed] last:border-b-0"
+                          >
+                            <div className="min-w-0">
+                            <div className="flex items-baseline gap-0 min-w-0">
                               <p className="font-semibold text-[#2d1f1a] truncate">{dish.name}</p>
                               <span className="flex-1 border-b border-dotted border-[#cfcac7] translate-y-[-2px]" />
+                              <WishFavoriteControls
+                                wishlisted={Boolean(dishPreferences[dish.id]?.wishlisted)}
+                                favorited={Boolean(dishPreferences[dish.id]?.favorited)}
+                                onToggleWishlist={() =>
+                                  onToggleWishlist?.(
+                                    dish.id,
+                                    !Boolean(dishPreferences[dish.id]?.wishlisted)
+                                  )
+                                }
+                                onToggleFavorite={() =>
+                                  onToggleFavorite?.(
+                                    dish.id,
+                                    !Boolean(dishPreferences[dish.id]?.favorited)
+                                  )
+                                }
+                              />
                               {dish.price !== null && (
                                 <span className="text-sm font-bold text-[#0f766e] whitespace-nowrap">
                                   ${dish.price.toFixed(2)}
@@ -141,14 +168,14 @@ export default function MenuView({ dishes, restaurantsById }: MenuViewProps) {
                           <div className="w-[80px] h-[60px] sm:w-[96px] sm:h-[72px] rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4] justify-self-end">
                             <RotatableImage
                               key={`menu:${dish.id}`}
-                              src={dish.imageUrl || "/dishwisher-d-mark.svg"}
+                              src={dish.imageUrl || "/dishwisher-photo-placeholder.svg"}
                               alt={dish.name}
                               className="w-full h-full object-cover"
                               storageKey={`menu:${dish.id}`}
                             />
                           </div>
                         </div>
-                      ))}
+                      )})}
                   </div>
                 </section>
               ))}

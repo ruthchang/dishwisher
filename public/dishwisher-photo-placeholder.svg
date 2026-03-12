@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">DishWisher photo placeholder</title>
+  <desc id="desc">Blank dish photo placeholder with the DishWisher logo centered.</desc>
+  <rect width="800" height="600" fill="#fafaf9"/>
+  <rect x="24" y="24" width="752" height="552" rx="28" fill="#fffefb" stroke="#e7e5e4" stroke-width="4"/>
+  <g transform="translate(400 300)">
+    <circle cx="0" cy="0" r="84" fill="none" stroke="#14b8a6" stroke-width="14"/>
+    <circle cx="0" cy="0" r="54" fill="none" stroke="#99f6e4" stroke-width="10"/>
+    <path fill="#0f766e" d="M0 36c-22.4-14.6-36-28-36-45.4 0-12.9 9.9-22.6 22.8-22.6 7.2 0 11.6 2.8 13.2 6.2 1.6-3.4 6-6.2 13.2-6.2C26.1-32 36-22.3 36-9.4 36 8 22.4 21.4 0 36Z"/>
+  </g>
+</svg>

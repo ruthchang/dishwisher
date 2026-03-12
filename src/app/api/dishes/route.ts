@@ -16,9 +16,10 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await req.json().catch(() => null)) as Dish | null;
-  if (!body?.name || !body.category || !body.restaurantId) {
+  if (!body?.name || !body.restaurantId) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
+  const category = body.category?.trim() || "Uncategorized";
 
   const tags = Array.isArray(body.tags) ? body.tags : [];
   const isCustom = body.restaurantId.startsWith("custom-");
@@ -81,7 +82,7 @@ export async function POST(req: Request) {
       yelpBusinessUrl: body.yelpBusinessUrl?.trim() || null,
       description: body.description?.trim() || "",
       price: body.price ?? null,
-      category: body.category.trim(),
+      category,
       imageUrl: body.imageUrl ?? null,
       tags,
       createdById: user.id,

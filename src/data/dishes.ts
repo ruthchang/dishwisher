@@ -25,6 +25,29 @@ export interface Dish {
   tags: string[];
 }
 
+export interface DishWish {
+  id: string;
+  name: string;
+  restaurantName?: string;
+  restaurantAddress?: string;
+  createdAt: string;
+  linkedDishId?: string;
+  linkedDishName?: string;
+  linkedDishRating?: number;
+  linkedDishImageUrl?: string;
+  yelpBusinessId?: string;
+  yelpBusinessUrl?: string;
+}
+
+export interface DishWishInput {
+  name?: string;
+  restaurantName?: string;
+  restaurantAddress?: string;
+  linkedDishId?: string;
+  yelpBusinessId?: string;
+  yelpBusinessUrl?: string;
+}
+
 export const restaurants: Restaurant[] = [];
 
 export const dishes: Dish[] = [];

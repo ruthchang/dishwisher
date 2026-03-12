@@ -4,17 +4,27 @@ import { useState, useEffect } from "react";
 import { restaurants, Dish } from "@/data/dishes";
 import StarRating from "./StarRating";
 import RotatableImage from "./RotatableImage";
+import WishFavoriteControls from "./WishFavoriteControls";
+import type { MenuDraftDish } from "@/lib/menu-import";
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 1600;
 const TARGET_IMAGE_SIZE_BYTES = 1200 * 1024;
-
 interface AddDishModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddDish: (dish: Dish) => void;
-  onEditDish?: (dish: Dish) => void;
+  onAddDish: (dish: Dish) => Promise<string | void> | string | void;
+  onEditDish?: (dish: Dish) => Promise<string | void> | string | void;
+  onSaveDishPreferences?: (dishId: string, preferences: {
+    wishlisted: boolean;
+    favorited: boolean;
+  }) => Promise<void> | void;
   editingDish?: Dish | null;
+  initialPreferences?: {
+    wishlisted: boolean;
+    favorited: boolean;
+  };
+  initialDraft?: MenuDraftDish | null;
   existingCategories: string[];
   existingTags: string[];
 }
@@ -32,10 +42,14 @@ export default function AddDishModal({
   onClose,
   onAddDish,
   onEditDish,
+  onSaveDishPreferences,
   editingDish,
+  initialPreferences,
+  initialDraft,
   existingCategories,
   existingTags,
 }: AddDishModalProps) {
+  const [entryMode, setEntryMode] = useState<"review" | "wish">("review");
   const [name, setName] = useState("");
   const [restaurantId, setRestaurantId] = useState("");
   const [customRestaurant, setCustomRestaurant] = useState("");
@@ -49,6 +63,8 @@ export default function AddDishModal({
   const [useCustomRestaurant, setUseCustomRestaurant] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageError, setImageError] = useState("");
+  const [imageProcessing, setImageProcessing] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [customRestaurantAddress, setCustomRestaurantAddress] = useState("");
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState("");
@@ -62,6 +78,8 @@ export default function AddDishModal({
   const [selectedYelpMatch, setSelectedYelpMatch] = useState<YelpRestaurantMatch | null>(
     null
   );
+  const [wishlisted, setWishlisted] = useState(false);
+  const [favorited, setFavorited] = useState(false);
 
   const readImageDimensions = (
     file: File
@@ -136,9 +154,30 @@ export default function AddDishModal({
   };
 
   const isEditing = !!editingDish;
+  const entryLabel = entryMode === "wish" ? "Wish" : "Dish";
+  const modalTitle = isEditing ? `Edit ${entryLabel}` : `Add ${entryLabel}`;
+  const submitLabel = isEditing ? `Save ${entryLabel}` : `Add ${entryLabel}`;
 
   useEffect(() => {
+    if (isOpen && !editingDish) {
+      setEntryMode("review");
+      setName(initialDraft?.name || "");
+      setPrice(initialDraft?.price !== null && initialDraft?.price !== undefined ? String(initialDraft.price) : "");
+      if (initialDraft?.category) {
+        if (existingCategories.includes(initialDraft.category)) {
+          setCategory(initialDraft.category);
+          setCustomCategory("");
+        } else {
+          setCategory("__custom__");
+          setCustomCategory(initialDraft.category);
+        }
+      }
+      setDescription(initialDraft ? `Imported from menu: ${initialDraft.sourceLine}` : "");
+      setWishlisted(initialPreferences?.wishlisted || false);
+      setFavorited(initialPreferences?.favorited || false);
+    }
     if (editingDish && isOpen) {
+      setEntryMode("review");
       setName(editingDish.name);
       setDescription(editingDish.description);
       setPrice(editingDish.price?.toString() || "");
@@ -190,10 +229,13 @@ export default function AddDishModal({
         setCustomRestaurant("");
         setSelectedYelpMatch(null);
       }
+      setWishlisted(initialPreferences?.wishlisted || false);
+      setFavorited(initialPreferences?.favorited || false);
     }
-  }, [editingDish, isOpen, existingCategories]);
+  }, [editingDish, existingCategories, initialDraft, initialPreferences, isOpen]);
 
   const resetForm = () => {
+    setEntryMode("review");
     setName("");
     setRestaurantId("");
     setCustomRestaurant("");
@@ -207,6 +249,8 @@ export default function AddDishModal({
     setUseCustomRestaurant(false);
     setImageUrl("");
     setImageError("");
+    setImageProcessing(false);
+    setSubmitError("");
     setCustomRestaurantAddress("");
     setLocationError("");
     setLocationLoading(false);
@@ -215,6 +259,8 @@ export default function AddDishModal({
     setYelpError("");
     setYelpMatches([]);
     setSelectedYelpMatch(null);
+    setWishlisted(false);
+    setFavorited(false);
   };
 
   const uploadImageToS3 = async (file: File): Promise<string | null> => {
@@ -318,6 +364,68 @@ export default function AddDishModal({
       setImageError(message);
     }
     e.target.value = "";
+  };
+
+  const rotateImageNinetyDegrees = async (file: File): Promise<File> => {
+    const { width, height, image } = await readImageDimensions(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = height;
+    canvas.height = width;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Could not rotate image.");
+    }
+    context.translate(canvas.width / 2, canvas.height / 2);
+    context.rotate((90 * Math.PI) / 180);
+    context.drawImage(image, -width / 2, -height / 2, width, height);
+
+    const rotatedBlob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.9)
+    );
+    if (!rotatedBlob) {
+      throw new Error("Could not rotate image.");
+    }
+    return new File([rotatedBlob], "rotated.jpg", { type: "image/jpeg" });
+  };
+
+  const handlePersistRotateImage = async () => {
+    if (!isEditing || !imageUrl) return;
+    if (imageProcessing) return;
+    try {
+      setImageProcessing(true);
+      setImageError("");
+      const sourceUrl = imageUrl.startsWith("data:")
+        ? imageUrl
+        : `/api/uploads/source?url=${encodeURIComponent(imageUrl)}`;
+      const sourceResponse = await fetch(sourceUrl);
+      if (!sourceResponse.ok) {
+        throw new Error("Could not load image for rotation.");
+      }
+      const sourceBlob = await sourceResponse.blob();
+      const sourceFile = new File([sourceBlob], "source.jpg", {
+        type: sourceBlob.type || "image/jpeg",
+      });
+      const rotated = await rotateImageNinetyDegrees(sourceFile);
+      const preparedFile = await compressAndResizeImage(rotated);
+
+      if (preparedFile.size > MAX_IMAGE_SIZE_BYTES) {
+        throw new Error("Rotated image is too large. Try a smaller source image.");
+      }
+
+      const s3Url = await uploadImageToS3(preparedFile);
+      if (s3Url) {
+        setImageUrl(s3Url);
+      } else {
+        const localDataUrl = await fileToDataUrl(preparedFile);
+        setImageUrl(localDataUrl);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not rotate image.";
+      setImageError(message);
+    } finally {
+      setImageProcessing(false);
+    }
   };
 
   const getCurrentPosition = (
@@ -473,10 +581,18 @@ export default function AddDishModal({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError("");
+    if (imageProcessing) {
+      setImageError("Please wait for image processing to finish.");
+      return;
+    }
 
-    const finalCategory = category === "__custom__" ? customCategory : category;
+    const finalCategory =
+      category === "__custom__"
+        ? customCategory
+        : category;
     const manualRestaurantId = `custom-${customRestaurant
       .toLowerCase()
       .replace(/\s+/g, "-")}`;
@@ -497,18 +613,33 @@ export default function AddDishModal({
       customRestaurantCuisine: selectedYelpMatch?.cuisine || undefined,
       yelpBusinessUrl: selectedYelpMatch?.yelpUrl || undefined,
       description: description.trim(),
-      price: price ? parseFloat(price) : null,
-      rating: rating,
+      price: entryMode === "wish" ? null : price ? parseFloat(price) : null,
+      rating: entryMode === "wish" ? 0 : rating,
       reviewCount: isEditing ? editingDish.reviewCount : 1,
       category: finalCategory,
-      imageUrl: imageUrl.trim() || undefined,
-      tags: tags,
+      imageUrl: entryMode === "wish" ? undefined : imageUrl.trim() || undefined,
+      tags: entryMode === "wish" ? [] : tags,
     };
 
-    if (isEditing && onEditDish) {
-      onEditDish(dish);
-    } else {
-      onAddDish(dish);
+    try {
+      const savedDishId =
+        (isEditing && onEditDish
+          ? await Promise.resolve(onEditDish(dish))
+          : await Promise.resolve(onAddDish(dish))) || dish.id;
+
+      if (onSaveDishPreferences) {
+        await Promise.resolve(
+          onSaveDishPreferences(savedDishId, {
+            wishlisted,
+            favorited,
+          })
+        );
+      }
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Could not save dish. Please try again."
+      );
+      return;
     }
     resetForm();
     onClose();
@@ -537,10 +668,18 @@ export default function AddDishModal({
   if (!isOpen) return null;
 
   const isValid =
-    name.trim() &&
-    (restaurantId || (useCustomRestaurant && customRestaurant.trim())) &&
-    (category || customCategory.trim()) &&
-    rating > 0;
+    entryMode === "wish"
+      ? Boolean(
+          name.trim() &&
+            (restaurantId || (useCustomRestaurant && customRestaurant.trim())) &&
+            !imageProcessing
+        )
+      : Boolean(
+          name.trim() &&
+            (restaurantId || (useCustomRestaurant && customRestaurant.trim())) &&
+            rating > 0 &&
+            !imageProcessing
+        );
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -548,7 +687,7 @@ export default function AddDishModal({
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-[#0f766e] via-[#14b8a6] to-[#99f6e4] px-6 py-5 flex items-center justify-between rounded-t-3xl">
           <h2 className="text-xl font-bold text-white accent-text-shadow">
-            {isEditing ? "Edit Dish" : "Add Dish"}
+            {modalTitle}
           </h2>
           <button
             onClick={() => {
@@ -574,6 +713,57 @@ export default function AddDishModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {!isEditing && (
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="block text-sm font-semibold text-[#3e2723] mb-2">Add Type</p>
+                <div className="inline-flex max-w-full rounded-2xl border-2 border-[#e7e5e4] bg-[#f7f7f5] p-1 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setEntryMode("review")}
+                    className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors whitespace-nowrap sm:px-4 ${
+                      entryMode === "review"
+                        ? "bg-white text-[#0f766e] shadow-sm"
+                        : "text-[#5b463f] hover:text-[#3e2723]"
+                    }`}
+                  >
+                    Review
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEntryMode("wish")}
+                    className={`px-3 py-2 text-sm font-semibold rounded-xl transition-colors whitespace-nowrap sm:px-4 ${
+                      entryMode === "wish"
+                        ? "bg-white text-[#0f766e] shadow-sm"
+                        : "text-[#5b463f] hover:text-[#3e2723]"
+                    }`}
+                  >
+                    Wish
+                  </button>
+                </div>
+              </div>
+              <WishFavoriteControls
+                wishlisted={wishlisted}
+                favorited={favorited}
+                onToggleWishlist={() => setWishlisted((prev) => !prev)}
+                onToggleFavorite={() => setFavorited((prev) => !prev)}
+                className="shrink-0"
+              />
+            </div>
+          )}
+
+          {isEditing && (
+            <div className="flex justify-end -mt-1 mb-1">
+              <WishFavoriteControls
+                wishlisted={wishlisted}
+                favorited={favorited}
+                onToggleWishlist={() => setWishlisted((prev) => !prev)}
+                onToggleFavorite={() => setFavorited((prev) => !prev)}
+                className="shrink-0"
+              />
+            </div>
+          )}
+
           {/* Dish Name */}
           <div>
             <label
@@ -587,7 +777,9 @@ export default function AddDishModal({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="What did you eat?"
+              placeholder={
+                entryMode === "wish" ? "What do you want to eat or try?" : "What did you eat?"
+              }
               className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
               required
             />
@@ -736,120 +928,9 @@ export default function AddDishModal({
             )}
           </div>
 
-          {/* Description */}
-          <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-semibold text-[#3e2723] mb-2"
-            >
-              Description
-            </label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Tell us about this dish..."
-              rows={2}
-              className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e] resize-none"
-            />
-          </div>
-
-          {/* Image URL */}
           <div>
             <label className="block text-sm font-semibold text-[#3e2723] mb-2">
-              Photo
-            </label>
-            <input
-              id="imageUpload"
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="w-full px-4 py-3 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-[#f0fdfa] file:text-[#0f766e] file:font-semibold file:cursor-pointer"
-            />
-            <p className="text-xs text-[#5b463f] mt-2">
-              Upload from your device (auto-compressed, max 5MB), or paste an image URL below.
-            </p>
-            <input
-              id="imageUrl"
-              type="url"
-              value={imageUrl}
-              onChange={(e) => {
-                setImageUrl(e.target.value);
-                setImageError("");
-              }}
-              placeholder="https://example.com/your-dish-photo.jpg"
-              className="w-full mt-3 px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
-            />
-            {imageError && (
-              <p className="text-xs text-[#b91c1c] mt-2">{imageError}</p>
-            )}
-            {imageUrl && (
-              <div className="mt-3 relative">
-                <div className="aspect-video rounded-2xl overflow-hidden bg-[#f7f7f5] border-2 border-[#e7e5e4]">
-                  <RotatableImage
-                    key={isEditing && editingDish ? `modal:${editingDish.id}` : "modal:new"}
-                    src={imageUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                    storageKey={isEditing && editingDish ? `modal:${editingDish.id}` : "modal:new"}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-[#5b463f] mt-1.5 text-center">
-                  Preview
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setImageUrl("")}
-                  className="mt-2 mx-auto block text-xs text-[#0f766e] hover:text-[#0b5f58] font-semibold"
-                >
-                  Remove photo
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Price and Rating */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="price"
-                className="block text-sm font-semibold text-[#3e2723] mb-2"
-              >
-                Price
-              </label>
-              <input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="$0.00"
-                className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[#3e2723] mb-2">
-                Your Rating <span className="text-[#b91c1c]">*</span>
-              </label>
-              <div className="pt-1">
-                <StarRating
-                  rating={rating}
-                  size="lg"
-                  interactive
-                  onRatingChange={setRating}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-semibold text-[#3e2723] mb-2">
-              Category <span className="text-[#b91c1c]">*</span>
+              Category
             </label>
             <select
               value={category}
@@ -875,69 +956,188 @@ export default function AddDishModal({
             )}
           </div>
 
-          {/* Tags */}
-          <div>
-            <label className="block text-sm font-semibold text-[#3e2723] mb-3">
-              Tags
-            </label>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {existingTags.slice(0, 15).map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleTag(tag)}
-                  className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all duration-200 ${
-                    tags.includes(tag)
-                      ? "bg-gradient-to-r from-[#0f766e] to-[#14b8a6] text-white shadow-md scale-105"
-                      : "bg-[#f7f7f5] text-[#5b463f] hover:bg-[#e7e5e4] border border-[#e7e5e4]"
-                  }`}
+          {entryMode === "review" && (
+            <>
+              <div>
+                <label className="block text-sm font-semibold text-[#3e2723] mb-2">
+                  Your Rating <span className="text-[#b91c1c]">*</span>
+                </label>
+                <div className="pt-1">
+                  <StarRating
+                    rating={rating}
+                    size="lg"
+                    interactive
+                    onRatingChange={setRating}
+                  />
+                </div>
+              </div>
+
+            </>
+          )}
+
+          {entryMode === "review" && (
+            <>
+              {/* Description */}
+              <div>
+                <label
+                  htmlFor="description"
+                  className="block text-sm font-semibold text-[#3e2723] mb-2"
                 >
-                  {tag}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={customTag}
-                onChange={(e) => setCustomTag(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addCustomTag();
-                  }
-                }}
-                placeholder="Add your own tag..."
-                className="flex-1 px-4 py-2.5 bg-white border-2 border-[#e7e5e4] rounded-xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e] text-sm"
-              />
-              <button
-                type="button"
-                onClick={addCustomTag}
-                className="px-4 py-2.5 bg-[#f7f7f5] text-[#5b463f] rounded-xl hover:bg-[#e7e5e4] transition-colors text-sm font-semibold"
-              >
-                Add
-              </button>
-            </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#f0fdfa] text-[#0f766e] rounded-full border border-[#99f6e4] font-medium"
-                  >
-                    {tag}
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Tell us about this dish..."
+                  rows={2}
+                  className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e] resize-none"
+                />
+              </div>
+
+              {/* Image URL */}
+              <div>
+                <label className="block text-sm font-semibold text-[#3e2723] mb-2">
+                  Photo
+                </label>
+                <input
+                  id="imageUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="w-full px-4 py-3 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-[#f0fdfa] file:text-[#0f766e] file:font-semibold file:cursor-pointer"
+                />
+                <p className="text-xs text-[#5b463f] mt-2">
+                  Upload from your device (auto-compressed, max 5MB), or paste an image URL below.
+                </p>
+                <input
+                  id="imageUrl"
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => {
+                    setImageUrl(e.target.value);
+                    setImageError("");
+                  }}
+                  placeholder="https://example.com/your-dish-photo.jpg"
+                  className="w-full mt-3 px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
+                />
+                {imageError && (
+                  <p className="text-xs text-[#b91c1c] mt-2">{imageError}</p>
+                )}
+                {imageUrl && (
+                  <div className="mt-3 relative">
+                    <div className="aspect-video rounded-2xl overflow-hidden bg-[#f7f7f5] border-2 border-[#e7e5e4]">
+                      <RotatableImage
+                        key={isEditing && editingDish ? `modal:${editingDish.id}` : "modal:new"}
+                        src={imageUrl}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        storageKey={isEditing && editingDish ? `modal:${editingDish.id}` : "modal:new"}
+                        allowRotate={isEditing}
+                        onRotate={handlePersistRotateImage}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-[#5b463f] mt-1.5 text-center">
+                      {imageProcessing ? "Processing image..." : "Preview"}
+                    </p>
                     <button
                       type="button"
-                      onClick={() => removeTag(tag)}
-                      className="hover:text-[#b91c1c] transition-colors"
+                      onClick={() => setImageUrl("")}
+                      className="mt-2 mx-auto block text-xs text-[#0f766e] hover:text-[#0b5f58] font-semibold"
                     >
-                      ✕
+                      Remove photo
                     </button>
-                  </span>
-                ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              <div>
+                <label
+                  htmlFor="price"
+                  className="block text-sm font-semibold text-[#3e2723] mb-2"
+                >
+                  Price
+                </label>
+                <input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="$0.00"
+                  className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-semibold text-[#3e2723] mb-3">
+                  Tags
+                </label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {existingTags.slice(0, 15).map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all duration-200 ${
+                        tags.includes(tag)
+                          ? "bg-gradient-to-r from-[#0f766e] to-[#14b8a6] text-white shadow-md scale-105"
+                          : "bg-[#f7f7f5] text-[#5b463f] hover:bg-[#e7e5e4] border border-[#e7e5e4]"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customTag}
+                    onChange={(e) => setCustomTag(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCustomTag();
+                      }
+                    }}
+                    placeholder="Add your own tag..."
+                    className="flex-1 px-4 py-2.5 bg-white border-2 border-[#e7e5e4] rounded-xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e] text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomTag}
+                    className="px-4 py-2.5 bg-[#f7f7f5] text-[#5b463f] rounded-xl hover:bg-[#e7e5e4] transition-colors text-sm font-semibold"
+                  >
+                    Add
+                  </button>
+                </div>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#f0fdfa] text-[#0f766e] rounded-full border border-[#99f6e4] font-medium"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => removeTag(tag)}
+                          className="hover:text-[#b91c1c] transition-colors"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
@@ -956,9 +1156,12 @@ export default function AddDishModal({
               disabled={!isValid}
               className="flex-1 px-4 py-3.5 primary-btn rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              {isEditing ? "Save Changes" : "Add Dish"}
+              {submitLabel}
             </button>
           </div>
+          {submitError && (
+            <p className="text-sm text-[#b91c1c]">{submitError}</p>
+          )}
         </form>
       </div>
     </div>

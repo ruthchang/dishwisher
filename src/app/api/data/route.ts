@@ -46,11 +46,30 @@ const DEFAULT_TAGS = [
 
 export async function GET() {
   const user = await getCurrentUser();
-  const [dishes, restaurants, myRatings] = await Promise.all([
+  const [dishes, restaurants, myRatings, wishes, preferences] = await Promise.all([
     db.dish.findMany({ orderBy: { createdAt: "desc" } }),
     db.restaurant.findMany({ orderBy: { name: "asc" } }),
     user
       ? db.rating.findMany({ where: { userId: user.id } })
+      : Promise.resolve([]),
+    user
+      ? db.dishWish.findMany({
+          where: { createdById: user.id },
+          orderBy: { createdAt: "desc" },
+          include: {
+            linkedDish: {
+              select: {
+                id: true,
+                name: true,
+                rating: true,
+                imageUrl: true,
+              },
+            },
+          },
+        })
+      : Promise.resolve([]),
+    user
+      ? db.userDishPreference.findMany({ where: { userId: user.id } })
       : Promise.resolve([]),
   ]);
 
@@ -87,10 +106,31 @@ export async function GET() {
   const userRatings = Object.fromEntries(
     myRatings.map((rating) => [rating.dishId, rating.value])
   );
+  const dishPreferences = Object.fromEntries(
+    preferences.map((pref) => [
+      pref.dishId,
+      { wishlisted: pref.wishlisted, favorited: pref.favorited },
+    ])
+  );
+  const normalizedWishes = wishes.map((wish) => ({
+    id: wish.id,
+    name: wish.name,
+    restaurantName: wish.restaurantName ?? undefined,
+    restaurantAddress: wish.restaurantAddress ?? undefined,
+    yelpBusinessId: wish.yelpBusinessId ?? undefined,
+    yelpBusinessUrl: wish.yelpBusinessUrl ?? undefined,
+    createdAt: wish.createdAt.toISOString(),
+    linkedDishId: wish.linkedDishId ?? undefined,
+    linkedDishName: wish.linkedDish?.name ?? undefined,
+    linkedDishRating: wish.linkedDish?.rating ?? undefined,
+    linkedDishImageUrl: wish.linkedDish?.imageUrl ?? undefined,
+  }));
 
   return NextResponse.json({
     dishes: normalizedDishes,
     restaurants,
+    wishes: normalizedWishes,
+    dishPreferences,
     userRatings,
     categories,
     cuisines,

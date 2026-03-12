@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Dish, getRestaurantById, Restaurant } from "@/data/dishes";
 import StarRating from "./StarRating";
 import RotatableImage from "./RotatableImage";
+import WishFavoriteControls from "./WishFavoriteControls";
 
 interface DishCardProps {
   dish: Dish;
@@ -13,6 +14,10 @@ interface DishCardProps {
   onDelete?: (dishId: string) => void;
   onEdit?: (dish: Dish) => void;
   customRestaurant?: Restaurant;
+  isWishlisted?: boolean;
+  isFavorited?: boolean;
+  onToggleWishlist?: (value: boolean) => void;
+  onToggleFavorite?: (value: boolean) => void;
 }
 
 export default function DishCard({
@@ -23,6 +28,10 @@ export default function DishCard({
   onDelete,
   onEdit,
   customRestaurant,
+  isWishlisted,
+  isFavorited,
+  onToggleWishlist,
+  onToggleFavorite,
 }: DishCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [localUserRating, setLocalUserRating] = useState(userRating || 0);
@@ -62,7 +71,7 @@ export default function DishCard({
           <div className="w-32 h-24 sm:w-44 sm:h-32 shrink-0 rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4]">
             <RotatableImage
               key={`dish-card:${dish.id}`}
-              src={dish.imageUrl || "/dishwisher-d-mark.svg"}
+              src={dish.imageUrl || "/dishwisher-photo-placeholder.svg"}
               alt={dish.name}
               className="w-full h-full object-cover"
               storageKey={`dish-card:${dish.id}`}
@@ -78,11 +87,19 @@ export default function DishCard({
                   {restaurant?.name || "Custom Restaurant"}
                 </p>
               </div>
-              {dish.price && (
-                <span className="text-sm font-bold text-[#0f766e] bg-[#ecfeff] px-2.5 py-1 rounded-md border border-[#99f6e4]">
-                  ${dish.price.toFixed(2)}
-                </span>
-              )}
+              <div className="flex items-center gap-0">
+                <WishFavoriteControls
+                  wishlisted={Boolean(isWishlisted)}
+                  favorited={Boolean(isFavorited)}
+                  onToggleWishlist={() => onToggleWishlist?.(!isWishlisted)}
+                  onToggleFavorite={() => onToggleFavorite?.(!isFavorited)}
+                />
+                {dish.price && (
+                  <span className="text-sm font-bold text-[#0f766e] bg-[#ecfeff] px-2.5 py-1 rounded-md border border-[#99f6e4]">
+                    ${dish.price.toFixed(2)}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-2 mt-2.5">
