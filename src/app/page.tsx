@@ -434,7 +434,7 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       <header className="sticky top-0 z-30 border-b border-[#e7e5e4] bg-white/95 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
             <div className="shrink-0 flex items-center gap-1.5 rounded-2xl border border-[#eceae8] bg-[linear-gradient(180deg,#fffefb_0%,#fafaf9_100%)] px-2.5 py-1.5 shadow-[0_1px_0_rgba(62,39,35,0.04)]">
               <Image
                 src="/dishwisher-logo.svg"
@@ -467,7 +467,7 @@ export default function Home() {
                 className="w-full px-4 py-2.5 bg-white border border-[#d6d3d1] rounded-md focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none text-[#3e2723] placeholder:text-[#a8a29e]"
               />
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 md:ml-auto md:w-auto md:justify-end">
               {currentUser ? (
                 <>
                   <span className="hidden sm:block text-sm text-[#5b463f]">
@@ -475,7 +475,7 @@ export default function Home() {
                   </span>
                   <button
                     onClick={handleLogout}
-                    className="px-3 py-2 text-sm font-semibold border border-[#d6d3d1] rounded-md text-[#3e2723] hover:bg-[#f7f7f5]"
+                    className="px-3 py-2 text-xs sm:text-sm font-semibold border border-[#d6d3d1] rounded-md text-[#3e2723] hover:bg-[#f7f7f5]"
                   >
                     Log out
                   </button>
@@ -486,14 +486,14 @@ export default function Home() {
                     setAuthMode("login");
                     setShowAuth(true);
                   }}
-                  className="px-3 py-2 text-sm font-semibold border border-[#d6d3d1] rounded-md text-[#3e2723] hover:bg-[#f7f7f5]"
+                  className="px-3 py-2 text-xs sm:text-sm font-semibold border border-[#d6d3d1] rounded-md text-[#3e2723] hover:bg-[#f7f7f5]"
                 >
                   Log in
                 </button>
               )}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="lg:hidden px-3 py-2 text-sm font-semibold border border-[#d6d3d1] rounded-md text-[#3e2723] hover:bg-[#f7f7f5]"
+                className="lg:hidden px-3 py-2 text-xs sm:text-sm font-semibold border border-[#d6d3d1] rounded-md text-[#3e2723] hover:bg-[#f7f7f5]"
               >
                 {showFilters ? "Hide Filters" : "Filters"}
               </button>
@@ -501,16 +501,17 @@ export default function Home() {
                 <>
                   <button
                     onClick={() => setShowImportMenu(true)}
-                    className="px-3 py-2 text-sm font-semibold border border-[#99f6e4] rounded-md text-[#0f766e] hover:bg-[#f0fdfa] transition-colors"
+                    className="px-3 py-2 text-xs sm:text-sm font-semibold border border-[#99f6e4] rounded-md text-[#0f766e] hover:bg-[#f0fdfa] transition-colors"
                   >
-                    Import Menu
+                    <span className="sm:hidden">Import</span>
+                    <span className="hidden sm:inline">Import Menu</span>
                   </button>
                   <button
                     onClick={() => {
                       setDraftDish(null);
                       setShowAddDish(true);
                     }}
-                    className="px-3.5 py-2 text-sm font-semibold rounded-md bg-[#0f766e] text-white hover:bg-[#0b5f58] transition-colors"
+                    className="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-md bg-[#0f766e] text-white hover:bg-[#0b5f58] transition-colors"
                   >
                     Add Dish
                   </button>
@@ -526,7 +527,7 @@ export default function Home() {
               <div className="inline-flex rounded-xl border border-[#d6d3d1] bg-[#fcfcfb] p-1 shadow-[0_1px_0_rgba(62,39,35,0.04)]">
                 <button
                   onClick={() => setDisplayMode("cards")}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-semibold rounded-lg transition-colors ${
                     displayMode === "cards"
                       ? "bg-[#0f766e] text-white shadow-sm"
                       : "text-[#3e2723] hover:bg-white"
@@ -536,7 +537,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setDisplayMode("menu")}
-                  className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-semibold rounded-lg transition-colors ${
                     displayMode === "menu"
                       ? "bg-[#0f766e] text-white shadow-sm"
                       : "text-[#3e2723] hover:bg-white"
@@ -561,10 +562,10 @@ export default function Home() {
                 Switch between the main browse view, saved wishes, and favorites.
               </p>
             </div>
-            <div className="inline-flex rounded-xl border border-[#d6d3d1] bg-white p-1 shadow-[0_1px_0_rgba(62,39,35,0.04)]">
+            <div className="grid w-full grid-cols-3 rounded-xl border border-[#d6d3d1] bg-white p-1 shadow-[0_1px_0_rgba(62,39,35,0.04)] sm:inline-flex sm:w-auto">
               <button
                 onClick={() => setCollectionView("main")}
-                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                className={`px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
                   collectionView === "main"
                     ? "bg-[#3e2723] text-white shadow-sm"
                     : "text-[#3e2723] hover:bg-[#f7f7f5]"
@@ -574,7 +575,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setCollectionView("wishes")}
-                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                className={`px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
                   collectionView === "wishes"
                     ? "bg-[#3e2723] text-white shadow-sm"
                     : "text-[#3e2723] hover:bg-[#f7f7f5]"
@@ -584,7 +585,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setCollectionView("favorites")}
-                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                className={`px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
                   collectionView === "favorites"
                     ? "bg-[#3e2723] text-white shadow-sm"
                     : "text-[#3e2723] hover:bg-[#f7f7f5]"

@@ -67,8 +67,8 @@ export default function DishCard({
         </div>
       )}
       <div className="p-4 sm:p-5">
-        <div className="flex gap-4">
-          <div className="w-32 h-24 sm:w-44 sm:h-32 shrink-0 rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4]">
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="h-44 w-full sm:h-32 sm:w-44 shrink-0 rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4]">
             <RotatableImage
               key={`dish-card:${dish.id}`}
               src={dish.imageUrl || "/dishwisher-photo-placeholder.svg"}
@@ -78,7 +78,7 @@ export default function DishCard({
             />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="font-bold text-lg text-[#2d1f1a] leading-tight">
                   {dish.name}
@@ -87,7 +87,7 @@ export default function DishCard({
                   {restaurant?.name || "Custom Restaurant"}
                 </p>
               </div>
-              <div className="flex items-center gap-0">
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 <WishFavoriteControls
                   wishlisted={Boolean(isWishlisted)}
                   favorited={Boolean(isFavorited)}
@@ -102,18 +102,22 @@ export default function DishCard({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-2.5">
+            <div className="flex flex-wrap items-center gap-2 mt-2.5">
               <StarRating rating={dish.rating} size="sm" showValue />
               <span className="text-xs text-[#78716c]">({dish.reviewCount} reviews)</span>
-              <span className="text-xs text-[#78716c]">•</span>
-              <span className="text-xs text-[#5b463f] font-semibold">{dish.category}</span>
+              {dish.category && (
+                <>
+                  <span className="text-xs text-[#78716c]">•</span>
+                  <span className="text-xs text-[#5b463f] font-semibold">{dish.category}</span>
+                </>
+              )}
             </div>
 
             <p className="text-[#5b463f] text-sm mt-2 line-clamp-2 leading-relaxed">
               {dish.description}
             </p>
 
-            <div className="flex items-center justify-between mt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
               <div className="flex flex-wrap gap-1.5">
                 {dish.tags.slice(0, 2).map((tag) => (
                   <span

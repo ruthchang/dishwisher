@@ -128,54 +128,58 @@ export default function MenuView({
                         return (
                           <div
                             key={dish.id}
-                            className="grid grid-cols-[minmax(0,1fr)_80px] sm:grid-cols-[minmax(0,1fr)_96px] gap-3 px-3 py-3 sm:px-4 sm:py-3.5 border-b border-[#f0efed] last:border-b-0"
+                            className="grid grid-cols-1 gap-3 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_96px] sm:px-4 sm:py-3.5 border-b border-[#f0efed] last:border-b-0"
                           >
                             <div className="min-w-0">
-                            <div className="flex items-baseline gap-0 min-w-0">
-                              <p className="font-semibold text-[#2d1f1a] truncate">{dish.name}</p>
-                              <span className="flex-1 border-b border-dotted border-[#cfcac7] translate-y-[-2px]" />
-                              <WishFavoriteControls
-                                wishlisted={Boolean(dishPreferences[dish.id]?.wishlisted)}
-                                favorited={Boolean(dishPreferences[dish.id]?.favorited)}
-                                onToggleWishlist={() =>
-                                  onToggleWishlist?.(
-                                    dish.id,
-                                    !Boolean(dishPreferences[dish.id]?.wishlisted)
-                                  )
-                                }
-                                onToggleFavorite={() =>
-                                  onToggleFavorite?.(
-                                    dish.id,
-                                    !Boolean(dishPreferences[dish.id]?.favorited)
-                                  )
-                                }
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-0 min-w-0">
+                                <div className="flex items-baseline gap-0 min-w-0 flex-1">
+                                  <p className="font-semibold text-[#2d1f1a] truncate">{dish.name}</p>
+                                  <span className="hidden sm:block flex-1 border-b border-dotted border-[#cfcac7] translate-y-[-2px]" />
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                                  <WishFavoriteControls
+                                    wishlisted={Boolean(dishPreferences[dish.id]?.wishlisted)}
+                                    favorited={Boolean(dishPreferences[dish.id]?.favorited)}
+                                    onToggleWishlist={() =>
+                                      onToggleWishlist?.(
+                                        dish.id,
+                                        !Boolean(dishPreferences[dish.id]?.wishlisted)
+                                      )
+                                    }
+                                    onToggleFavorite={() =>
+                                      onToggleFavorite?.(
+                                        dish.id,
+                                        !Boolean(dishPreferences[dish.id]?.favorited)
+                                      )
+                                    }
+                                  />
+                                  {dish.price !== null && (
+                                    <span className="text-sm font-bold text-[#0f766e] whitespace-nowrap">
+                                      ${dish.price.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                <StarRating rating={dish.rating} size="sm" showValue />
+                                {dish.description && (
+                                  <p className="hidden sm:block text-xs text-[#78716c] truncate italic">
+                                    {dish.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="h-[140px] w-full sm:h-[72px] sm:w-[96px] rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4] justify-self-end">
+                              <RotatableImage
+                                key={`menu:${dish.id}`}
+                                src={dish.imageUrl || "/dishwisher-photo-placeholder.svg"}
+                                alt={dish.name}
+                                className="w-full h-full object-cover"
+                                storageKey={`menu:${dish.id}`}
                               />
-                              {dish.price !== null && (
-                                <span className="text-sm font-bold text-[#0f766e] whitespace-nowrap">
-                                  ${dish.price.toFixed(2)}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <StarRating rating={dish.rating} size="sm" showValue />
-                              {dish.description && (
-                                <p className="hidden sm:block text-xs text-[#78716c] truncate italic">
-                                  {dish.description}
-                                </p>
-                              )}
                             </div>
                           </div>
-                          <div className="w-[80px] h-[60px] sm:w-[96px] sm:h-[72px] rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4] justify-self-end">
-                            <RotatableImage
-                              key={`menu:${dish.id}`}
-                              src={dish.imageUrl || "/dishwisher-photo-placeholder.svg"}
-                              alt={dish.name}
-                              className="w-full h-full object-cover"
-                              storageKey={`menu:${dish.id}`}
-                            />
-                          </div>
-                        </div>
-                      )})}
+                        )})}
                   </div>
                 </section>
               ))}
