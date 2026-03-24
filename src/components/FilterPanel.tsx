@@ -20,6 +20,8 @@ interface FilterPanelProps {
   onSortChange: (sort: string) => void;
   minRating: number;
   onMinRatingChange: (rating: number) => void;
+  ratingFilter?: "all" | "rated" | "unrated";
+  onRatingFilterChange?: (filter: "all" | "rated" | "unrated") => void;
   allCategories?: string[];
   allCuisines?: string[];
   allRestaurants?: Restaurant[];
@@ -38,6 +40,8 @@ export default function FilterPanel({
   onSortChange,
   minRating,
   onMinRatingChange,
+  ratingFilter = "all",
+  onRatingFilterChange,
   allCategories,
   allCuisines,
   allRestaurants,
@@ -178,6 +182,30 @@ export default function FilterPanel({
           </div>
         </div>
       </div>
+
+      {/* Rated / Unrated */}
+      {onRatingFilterChange && (
+        <div className="mb-5">
+          <label className="block text-sm font-semibold text-[#5b463f] mb-3">
+            Rating Status
+          </label>
+          <div className="flex gap-2">
+            {(["all", "rated", "unrated"] as const).map((option) => (
+              <button
+                key={option}
+                onClick={() => onRatingFilterChange(option)}
+                className={`flex-1 px-3 py-1.5 text-sm rounded-md font-medium transition-all duration-200 capitalize ${
+                  ratingFilter === option
+                    ? "bg-[#0f766e] text-white"
+                    : "bg-[#f7f7f5] text-[#5b463f] hover:bg-[#e7e5e4] border border-[#e7e5e4]"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sort */}
       <div>

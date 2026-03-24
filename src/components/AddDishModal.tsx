@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { restaurants, Dish } from "@/data/dishes";
+import { Dish, Restaurant } from "@/data/dishes";
 import StarRating from "./StarRating";
 import RotatableImage from "./RotatableImage";
 import WishFavoriteControls from "./WishFavoriteControls";
@@ -27,6 +27,7 @@ interface AddDishModalProps {
   initialDraft?: MenuDraftDish | null;
   existingCategories: string[];
   existingTags: string[];
+  existingRestaurants: Restaurant[];
 }
 
 interface YelpRestaurantMatch {
@@ -48,6 +49,7 @@ export default function AddDishModal({
   initialDraft,
   existingCategories,
   existingTags,
+  existingRestaurants,
 }: AddDishModalProps) {
   const [entryMode, setEntryMode] = useState<"review" | "wish">("review");
   const [name, setName] = useState("");
@@ -80,6 +82,20 @@ export default function AddDishModal({
   );
   const [wishlisted, setWishlisted] = useState(false);
   const [favorited, setFavorited] = useState(false);
+  const [showRestaurantSuggestions, setShowRestaurantSuggestions] = useState(false);
+  const selectedExistingRestaurant = restaurantId
+    ? existingRestaurants.find((restaurant) => restaurant.id === restaurantId)
+    : undefined;
+  const restaurantQuery = useCustomRestaurant
+    ? customRestaurant
+    : selectedExistingRestaurant?.name || "";
+  const filteredRestaurantSuggestions = restaurantQuery.trim()
+    ? existingRestaurants
+        .filter((restaurant) =>
+          restaurant.name.toLowerCase().includes(restaurantQuery.trim().toLowerCase())
+        )
+        .slice(0, 6)
+    : existingRestaurants.slice(0, 6);
 
   const readImageDimensions = (
     file: File
@@ -175,6 +191,7 @@ export default function AddDishModal({
       setDescription(initialDraft ? `Imported from menu: ${initialDraft.sourceLine}` : "");
       setWishlisted(initialPreferences?.wishlisted || false);
       setFavorited(initialPreferences?.favorited || false);
+      setShowRestaurantSuggestions(false);
     }
     if (editingDish && isOpen) {
       setEntryMode("review");
@@ -231,6 +248,7 @@ export default function AddDishModal({
       }
       setWishlisted(initialPreferences?.wishlisted || false);
       setFavorited(initialPreferences?.favorited || false);
+      setShowRestaurantSuggestions(false);
     }
   }, [editingDish, existingCategories, initialDraft, initialPreferences, isOpen]);
 
@@ -261,6 +279,7 @@ export default function AddDishModal({
     setSelectedYelpMatch(null);
     setWishlisted(false);
     setFavorited(false);
+    setShowRestaurantSuggestions(false);
   };
 
   const uploadImageToS3 = async (file: File): Promise<string | null> => {
@@ -337,6 +356,8 @@ export default function AddDishModal({
       return;
     }
 
+    setImageProcessing(true);
+    setImageError("");
     try {
       const preparedFile = await compressAndResizeImage(sourceFile);
       if (preparedFile.size > MAX_IMAGE_SIZE_BYTES) {
@@ -362,8 +383,10 @@ export default function AddDishModal({
       const message =
         error instanceof Error ? error.message : "Could not upload image.";
       setImageError(message);
+    } finally {
+      setImageProcessing(false);
+      e.target.value = "";
     }
-    e.target.value = "";
   };
 
   const rotateImageNinetyDegrees = async (file: File): Promise<File> => {
@@ -581,6 +604,44 @@ export default function AddDishModal({
     }
   };
 
+  const handleRestaurantInputChange = (value: string) => {
+    setShowRestaurantSuggestions(true);
+    const normalizedValue = value.trim().toLowerCase();
+    const existingMatch = existingRestaurants.find(
+      (restaurant) => restaurant.name.trim().toLowerCase() === normalizedValue
+    );
+
+    if (existingMatch) {
+      setRestaurantId(existingMatch.id);
+      setUseCustomRestaurant(false);
+      setCustomRestaurant("");
+      setCustomRestaurantAddress("");
+      setYelpMatches([]);
+      setYelpError("");
+      setSelectedYelpMatch(null);
+      setShowRestaurantSuggestions(false);
+      return;
+    }
+
+    setRestaurantId("");
+    setUseCustomRestaurant(true);
+    setCustomRestaurant(value);
+    setSelectedYelpMatch(null);
+  };
+
+  const selectExistingRestaurant = (id: string) => {
+    const match = existingRestaurants.find((restaurant) => restaurant.id === id);
+    if (!match) return;
+    setRestaurantId(match.id);
+    setUseCustomRestaurant(false);
+    setCustomRestaurant("");
+    setCustomRestaurantAddress("");
+    setYelpMatches([]);
+    setYelpError("");
+    setSelectedYelpMatch(null);
+    setShowRestaurantSuggestions(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError("");
@@ -677,7 +738,6 @@ export default function AddDishModal({
       : Boolean(
           name.trim() &&
             (restaurantId || (useCustomRestaurant && customRestaurant.trim())) &&
-            rating > 0 &&
             !imageProcessing
         );
 
@@ -790,46 +850,39 @@ export default function AddDishModal({
             <label className="block text-sm font-semibold text-[#3e2723] mb-2">
               Restaurant <span className="text-[#b91c1c]">*</span>
             </label>
-            <div className="flex items-center gap-4 mb-3">
-              <label className="flex items-center gap-2 text-sm font-medium text-[#5b463f] cursor-pointer">
-                <input
-                  type="radio"
-                  checked={!useCustomRestaurant}
-                  onChange={() => {
-                    setUseCustomRestaurant(false);
-                    setYelpMatches([]);
-                    setYelpError("");
-                    setSelectedYelpMatch(null);
-                  }}
-                  className="w-4 h-4 accent-[#0f766e]"
-                />
-                Existing Spot
-              </label>
-              <label className="flex items-center gap-2 text-sm font-medium text-[#5b463f] cursor-pointer">
-                <input
-                  type="radio"
-                  checked={useCustomRestaurant}
-                  onChange={() => {
-                    setUseCustomRestaurant(true);
-                    setYelpError("");
-                  }}
-                  className="w-4 h-4 accent-[#0f766e]"
-                />
-                New Place
-              </label>
-            </div>
-            {useCustomRestaurant ? (
+            <input
+              type="text"
+              value={restaurantQuery}
+              onChange={(e) => handleRestaurantInputChange(e.target.value)}
+              onFocus={() => setShowRestaurantSuggestions(true)}
+              placeholder="Pick an existing spot or type a new one"
+              className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
+              required
+            />
+            {showRestaurantSuggestions && filteredRestaurantSuggestions.length > 0 && (
+              <div className="mt-2 overflow-hidden rounded-xl border border-[#e7e5e4] bg-white shadow-sm">
+                {filteredRestaurantSuggestions.map((restaurant) => (
+                  <button
+                    key={restaurant.id}
+                    type="button"
+                    onClick={() => selectExistingRestaurant(restaurant.id)}
+                    className="block w-full border-b border-[#f0efed] px-4 py-2.5 text-left last:border-b-0 hover:bg-[#f7f7f5]"
+                  >
+                    <p className="text-sm font-semibold text-[#2d1f1a]">
+                      {restaurant.name}
+                    </p>
+                    <p className="text-xs text-[#5b463f]">
+                      {[restaurant.cuisine, restaurant.address].filter(Boolean).join(" • ")}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="mt-2 text-xs text-[#78716c]">
+              Start typing to use an existing spot or enter a new place.
+            </p>
+            {useCustomRestaurant && customRestaurant.trim() ? (
               <div className="space-y-3">
-                <input
-                  type="text"
-                  value={customRestaurant}
-                  onChange={(e) => {
-                    setCustomRestaurant(e.target.value);
-                    setSelectedYelpMatch(null);
-                  }}
-                  placeholder="Where did you find this gem?"
-                  className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
-                />
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
@@ -912,20 +965,7 @@ export default function AddDishModal({
                   className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
                 />
               </div>
-            ) : (
-              <select
-                value={restaurantId}
-                onChange={(e) => setRestaurantId(e.target.value)}
-                className="w-full px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] cursor-pointer"
-              >
-                <option value="">Pick a restaurant...</option>
-                {restaurants.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            )}
+            ) : null}
           </div>
 
           <div>
@@ -995,7 +1035,7 @@ export default function AddDishModal({
                 />
               </div>
 
-              {/* Image URL */}
+              {/* Photo */}
               <div>
                 <label className="block text-sm font-semibold text-[#3e2723] mb-2">
                   Photo
@@ -1004,23 +1044,13 @@ export default function AddDishModal({
                   id="imageUpload"
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   onChange={handleImageUpload}
                   className="w-full px-4 py-3 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-[#f0fdfa] file:text-[#0f766e] file:font-semibold file:cursor-pointer"
                 />
                 <p className="text-xs text-[#5b463f] mt-2">
-                  Upload from your device (auto-compressed, max 5MB), or paste an image URL below.
+                  Choose a photo or take one now on supported devices. Images are auto-compressed up to 5MB.
                 </p>
-                <input
-                  id="imageUrl"
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => {
-                    setImageUrl(e.target.value);
-                    setImageError("");
-                  }}
-                  placeholder="https://example.com/your-dish-photo.jpg"
-                  className="w-full mt-3 px-4 py-3.5 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e]"
-                />
                 {imageError && (
                   <p className="text-xs text-[#b91c1c] mt-2">{imageError}</p>
                 )}

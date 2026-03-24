@@ -36,6 +36,7 @@ export default function Home() {
   const [selectedRestaurant, setSelectedRestaurant] = useState("");
   const [sortBy, setSortBy] = useState("rating-desc");
   const [minRating, setMinRating] = useState(0);
+  const [ratingFilter, setRatingFilter] = useState<"all" | "rated" | "unrated">("all");
   const [userRatings, setUserRatings] = useState<Record<string, number>>({});
   const [dishPreferences, setDishPreferences] = useState<
     Record<string, { wishlisted: boolean; favorited: boolean }>
@@ -381,6 +382,12 @@ export default function Home() {
       result = result.filter((dish) => dish.rating >= minRating);
     }
 
+    if (ratingFilter === "rated") {
+      result = result.filter((dish) => dish.rating > 0);
+    } else if (ratingFilter === "unrated") {
+      result = result.filter((dish) => !dish.rating || dish.rating === 0);
+    }
+
     switch (sortBy) {
       case "rating-desc":
         result.sort((a, b) => b.rating - a.rating);
@@ -411,6 +418,7 @@ export default function Home() {
     selectedRestaurant,
     sortBy,
     minRating,
+    ratingFilter,
     userRestaurants,
   ]);
 
@@ -421,6 +429,7 @@ export default function Home() {
     setSelectedRestaurant("");
     setSortBy("rating-desc");
     setMinRating(0);
+    setRatingFilter("all");
   };
 
   const hasActiveFilters =
@@ -428,7 +437,8 @@ export default function Home() {
     selectedCategories.length > 0 ||
     selectedCuisines.length > 0 ||
     selectedRestaurant ||
-    minRating > 0;
+    minRating > 0 ||
+    ratingFilter !== "all";
 
   return (
     <div className="min-h-screen bg-white">
@@ -604,7 +614,7 @@ export default function Home() {
                 ? "Wish List"
                 : collectionView === "favorites"
                   ? "Favorites"
-                  : "Rated Dishes"}
+                  : "Dishes"}
             </h1>
             <p className="text-sm text-[#5b463f] mt-1">
               {collectionView === "wishes"
@@ -669,6 +679,8 @@ export default function Home() {
                     onSortChange={setSortBy}
                     minRating={minRating}
                     onMinRatingChange={setMinRating}
+                    ratingFilter={ratingFilter}
+                    onRatingFilterChange={setRatingFilter}
                     allCategories={allCategories}
                     allCuisines={allCuisines}
                     allRestaurants={allRestaurants}
@@ -764,6 +776,8 @@ export default function Home() {
                   onSortChange={setSortBy}
                   minRating={minRating}
                   onMinRatingChange={setMinRating}
+                  ratingFilter={ratingFilter}
+                  onRatingFilterChange={setRatingFilter}
                   allCategories={allCategories}
                   allCuisines={allCuisines}
                   allRestaurants={allRestaurants}
@@ -890,6 +904,7 @@ export default function Home() {
         initialDraft={editingDish ? null : draftDish}
         existingCategories={allCategories}
         existingTags={allTags}
+        existingRestaurants={allRestaurants}
       />
 
       <ImportMenuModal
