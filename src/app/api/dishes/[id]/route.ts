@@ -7,6 +7,57 @@ function customRestaurantId(name: string): string {
   return `custom-${name.toLowerCase().replace(/\s+/g, "-")}`;
 }
 
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  const dish = await db.dish.findUnique({
+    where: { id },
+    include: {
+      restaurant: true,
+      ratings: {
+        include: { user: { select: { id: true, name: true } } },
+        orderBy: { createdAt: "desc" },
+      },
+      createdBy: { select: { id: true, name: true } },
+    },
+  });
+
+  if (!dish) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  return NextResponse.json({
+    dish: {
+      id: dish.id,
+      name: dish.name,
+      restaurantId: dish.restaurantId ?? "",
+      customRestaurantName: dish.customRestaurantName ?? undefined,
+      customRestaurantAddress: dish.customRestaurantAddress ?? undefined,
+      yelpBusinessUrl: dish.yelpBusinessUrl ?? undefined,
+      description: dish.description,
+      price: dish.price,
+      rating: dish.rating,
+      reviewCount: dish.reviewCount,
+      category: dish.category,
+      imageUrl: dish.imageUrl ?? undefined,
+      tags: Array.isArray(dish.tags) ? dish.tags : [],
+      createdAt: dish.createdAt.toISOString(),
+      updatedAt: dish.updatedAt?.toISOString() ?? dish.createdAt.toISOString(),
+      createdBy: dish.createdBy,
+      restaurant: dish.restaurant,
+    },
+    reviews: dish.ratings.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      userName: r.user.name,
+      value: r.value,
+      text: r.text ?? null,
+      createdAt: r.createdAt.toISOString(),
+    })),
+  });
+}
+
 function yelpRestaurantId(yelpBusinessId: string): string {
   return `yelp-${yelpBusinessId}`;
 }

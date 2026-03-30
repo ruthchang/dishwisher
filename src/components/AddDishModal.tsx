@@ -1000,7 +1000,7 @@ export default function AddDishModal({
             <>
               <div>
                 <label className="block text-sm font-semibold text-[#3e2723] mb-2">
-                  Your Rating <span className="text-[#b91c1c]">*</span>
+                  Your Rating <span className="text-xs font-normal text-[#78716c]">(optional)</span>
                 </label>
                 <div className="pt-1">
                   <StarRating
@@ -1008,7 +1008,11 @@ export default function AddDishModal({
                     size="lg"
                     interactive
                     onRatingChange={setRating}
+                    allowClear
                   />
+                  {rating === 0 && (
+                    <p className="text-xs text-[#78716c] mt-1">No rating — tap a star to rate</p>
+                  )}
                 </div>
               </div>
 

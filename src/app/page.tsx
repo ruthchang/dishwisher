@@ -11,6 +11,9 @@ import FilterPanel from "@/components/FilterPanel";
 import AddDishModal from "@/components/AddDishModal";
 import MenuView from "@/components/MenuView";
 import ImportMenuModal from "@/components/ImportMenuModal";
+import ForkWishIcon from "@/components/ForkWishIcon";
+import FavoritePlateIcon from "@/components/FavoritePlateIcon";
+import KnifeIcon from "@/components/KnifeIcon";
 import type { MenuDraftDish } from "@/lib/menu-import";
 
 interface UserRestaurantData {
@@ -39,12 +42,12 @@ export default function Home() {
   const [ratingFilter, setRatingFilter] = useState<"all" | "rated" | "unrated">("all");
   const [userRatings, setUserRatings] = useState<Record<string, number>>({});
   const [dishPreferences, setDishPreferences] = useState<
-    Record<string, { wishlisted: boolean; favorited: boolean }>
+    Record<string, { wishlisted: boolean; favorited: boolean; recommended: boolean }>
   >({});
   const [showFilters, setShowFilters] = useState(false);
   const [displayMode, setDisplayMode] = useState<"cards" | "menu">("cards");
   const [collectionView, setCollectionView] = useState<
-    "main" | "wishes" | "favorites"
+    "main" | "wishes" | "favorites" | "recommended"
   >("main");
   const [mounted, setMounted] = useState(false);
   const [showAddDish, setShowAddDish] = useState(false);
@@ -228,7 +231,7 @@ export default function Home() {
 
   const persistDishPreferences = async (
     dishId: string,
-    preferences: { wishlisted: boolean; favorited: boolean }
+    preferences: { wishlisted: boolean; favorited: boolean; recommended?: boolean }
   ) => {
     for (const [type, value] of Object.entries(preferences) as Array<
       ["wishlisted" | "favorited", boolean]
@@ -261,7 +264,7 @@ export default function Home() {
 
   const updateDishPreference = useCallback(async (
     dishId: string,
-    type: "wishlisted" | "favorited",
+    type: "wishlisted" | "favorited" | "recommended",
     value: boolean
   ) => {
     if (!currentUser) {
@@ -272,6 +275,7 @@ export default function Home() {
     const previousPreference = dishPreferencesRef.current[dishId] || {
       wishlisted: false,
       favorited: false,
+      recommended: false,
     };
     const nextVersion = (preferenceRequestVersionRef.current[pendingKey] || 0) + 1;
     preferenceRequestVersionRef.current[pendingKey] = nextVersion;
@@ -315,6 +319,7 @@ export default function Home() {
           [dishId]: {
             wishlisted: Boolean(payload.wishlisted),
             favorited: Boolean(payload.favorited),
+            recommended: Boolean(payload.recommended),
           },
         }));
       }
@@ -340,11 +345,18 @@ export default function Home() {
     [allDishes, dishPreferences]
   );
 
+  const recommendedDishes = useMemo(
+    () =>
+      allDishes.filter((dish) => Boolean(dishPreferences[dish.id]?.recommended)),
+    [allDishes, dishPreferences]
+  );
+
   const sourceDishes = useMemo(() => {
     if (collectionView === "wishes") return wishlistedDishes;
     if (collectionView === "favorites") return favoritedDishes;
+    if (collectionView === "recommended") return recommendedDishes;
     return allDishes;
-  }, [allDishes, collectionView, favoritedDishes, wishlistedDishes]);
+  }, [allDishes, collectionView, favoritedDishes, wishlistedDishes, recommendedDishes]);
 
   const filteredAndSortedDishes = useMemo(() => {
     let result = [...sourceDishes];
@@ -406,6 +418,12 @@ export default function Home() {
         break;
       case "name-asc":
         result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "created-desc":
+        result.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+        break;
+      case "updated-desc":
+        result.sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
         break;
     }
 
@@ -569,10 +587,10 @@ export default function Home() {
                 Collection
               </p>
               <p className="text-sm text-[#5b463f] mt-1">
-                Switch between the main browse view, saved wishes, and favorites.
+                Switch between the main browse view, wishes, favorites, and recommendations.
               </p>
             </div>
-            <div className="grid w-full grid-cols-3 rounded-xl border border-[#d6d3d1] bg-white p-1 shadow-[0_1px_0_rgba(62,39,35,0.04)] sm:inline-flex sm:w-auto">
+            <div className="grid w-full grid-cols-4 rounded-xl border border-[#d6d3d1] bg-white p-1 shadow-[0_1px_0_rgba(62,39,35,0.04)] sm:inline-flex sm:w-auto">
               <button
                 onClick={() => setCollectionView("main")}
                 className={`px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
@@ -585,23 +603,45 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setCollectionView("wishes")}
-                className={`px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
                   collectionView === "wishes"
                     ? "bg-[#3e2723] text-white shadow-sm"
                     : "text-[#3e2723] hover:bg-[#f7f7f5]"
                 }`}
               >
+                <ForkWishIcon
+                  active={collectionView === "wishes"}
+                  className="pointer-events-none w-4 h-4"
+                />
                 Wishes
               </button>
               <button
                 onClick={() => setCollectionView("favorites")}
-                className={`px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
                   collectionView === "favorites"
                     ? "bg-[#3e2723] text-white shadow-sm"
                     : "text-[#3e2723] hover:bg-[#f7f7f5]"
                 }`}
               >
+                <FavoritePlateIcon
+                  active={collectionView === "favorites"}
+                  className="pointer-events-none w-5 h-5"
+                />
                 Favorites
+              </button>
+              <button
+                onClick={() => setCollectionView("recommended")}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
+                  collectionView === "recommended"
+                    ? "bg-[#3e2723] text-white shadow-sm"
+                    : "text-[#3e2723] hover:bg-[#f7f7f5]"
+                }`}
+              >
+                <KnifeIcon
+                  active={collectionView === "recommended"}
+                  className="pointer-events-none w-4 h-4"
+                />
+                Recommended
               </button>
             </div>
           </div>
@@ -614,20 +654,12 @@ export default function Home() {
                 ? "Wish List"
                 : collectionView === "favorites"
                   ? "Favorites"
-                  : "Dishes"}
+                  : collectionView === "recommended"
+                    ? "Recommended"
+                    : "Dishes"}
             </h1>
             <p className="text-sm text-[#5b463f] mt-1">
-              {collectionView === "wishes"
-                ? `Showing ${filteredAndSortedDishes.length} ${
-                    filteredAndSortedDishes.length === 1 ? "dish" : "dishes"
-                  }`
-                : collectionView === "favorites"
-                  ? `Showing ${favoritedDishes.length} ${
-                      favoritedDishes.length === 1 ? "dish" : "dishes"
-                    }`
-                : `Showing ${filteredAndSortedDishes.length} ${
-                    filteredAndSortedDishes.length === 1 ? "dish" : "dishes"
-                  }`}
+              {`Showing ${filteredAndSortedDishes.length} ${filteredAndSortedDishes.length === 1 ? "dish" : "dishes"}`}
             </p>
           </div>
           {mounted && sourceDishes.length > 0 && (
@@ -637,18 +669,22 @@ export default function Home() {
                 ? "wishlisted dishes"
                 : collectionView === "favorites"
                   ? "favorite dishes"
-                  : "dishes added by you"}
+                  : collectionView === "recommended"
+                    ? "recommended dishes"
+                    : "dishes added by you"}
             </p>
           )}
         </div>
 
-        {collectionView === "wishes" || collectionView === "favorites" ? (
+        {collectionView === "wishes" || collectionView === "favorites" || collectionView === "recommended" ? (
           !currentUser ? (
             <div className="panel-card rounded-xl p-10 text-center">
               <h3 className="text-xl font-bold text-[#3e2723] mb-2">
                 {collectionView === "wishes"
                   ? "Log in to view your wishes"
-                  : "Log in to view your favorites"}
+                  : collectionView === "recommended"
+                    ? "Log in to view your recommendations"
+                    : "Log in to view your favorites"}
               </h3>
               <p className="text-[#5b463f] mb-6">
                 {collectionView === "wishes"
@@ -734,11 +770,15 @@ export default function Home() {
                         customRestaurant={userRestaurants[dish.restaurantId]}
                         isWishlisted={Boolean(dishPreferences[dish.id]?.wishlisted)}
                         isFavorited={Boolean(dishPreferences[dish.id]?.favorited)}
+                        isRecommended={Boolean(dishPreferences[dish.id]?.recommended)}
                         onToggleWishlist={(value) =>
                           updateDishPreference(dish.id, "wishlisted", value)
                         }
                         onToggleFavorite={(value) =>
                           updateDishPreference(dish.id, "favorited", value)
+                        }
+                        onToggleRecommended={(value) =>
+                          updateDishPreference(dish.id, "recommended", value)
                         }
                       />
                     ))}
@@ -854,11 +894,15 @@ export default function Home() {
                         customRestaurant={userRestaurants[dish.restaurantId]}
                         isWishlisted={Boolean(dishPreferences[dish.id]?.wishlisted)}
                         isFavorited={Boolean(dishPreferences[dish.id]?.favorited)}
+                        isRecommended={Boolean(dishPreferences[dish.id]?.recommended)}
                         onToggleWishlist={(value) =>
                           updateDishPreference(dish.id, "wishlisted", value)
                         }
                         onToggleFavorite={(value) =>
                           updateDishPreference(dish.id, "favorited", value)
+                        }
+                        onToggleRecommended={(value) =>
+                          updateDishPreference(dish.id, "recommended", value)
                         }
                       />
                     ))}

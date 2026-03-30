@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Dish, getRestaurantById, Restaurant } from "@/data/dishes";
 import StarRating from "./StarRating";
 import RotatableImage from "./RotatableImage";
@@ -16,8 +17,10 @@ interface DishCardProps {
   customRestaurant?: Restaurant;
   isWishlisted?: boolean;
   isFavorited?: boolean;
+  isRecommended?: boolean;
   onToggleWishlist?: (value: boolean) => void;
   onToggleFavorite?: (value: boolean) => void;
+  onToggleRecommended?: (value: boolean) => void;
 }
 
 export default function DishCard({
@@ -30,8 +33,10 @@ export default function DishCard({
   customRestaurant,
   isWishlisted,
   isFavorited,
+  isRecommended,
   onToggleWishlist,
   onToggleFavorite,
+  onToggleRecommended,
 }: DishCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [localUserRating, setLocalUserRating] = useState(userRating || 0);
@@ -79,7 +84,7 @@ export default function DishCard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
+              <div className="min-w-0">
                 <h3 className="font-bold text-lg text-[#2d1f1a] leading-tight">
                   {dish.name}
                 </h3>
@@ -87,12 +92,14 @@ export default function DishCard({
                   {restaurant?.name || "Custom Restaurant"}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
                 <WishFavoriteControls
                   wishlisted={Boolean(isWishlisted)}
                   favorited={Boolean(isFavorited)}
+                  recommended={Boolean(isRecommended)}
                   onToggleWishlist={() => onToggleWishlist?.(!isWishlisted)}
                   onToggleFavorite={() => onToggleFavorite?.(!isFavorited)}
+                  onToggleRecommended={() => onToggleRecommended?.(!isRecommended)}
                 />
                 {dish.price && (
                   <span className="text-sm font-bold text-[#0f766e] bg-[#ecfeff] px-2.5 py-1 rounded-md border border-[#99f6e4]">
@@ -103,8 +110,14 @@ export default function DishCard({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mt-2.5">
-              <StarRating rating={dish.rating} size="sm" showValue />
-              <span className="text-xs text-[#78716c]">({dish.reviewCount} reviews)</span>
+              {dish.rating > 0 ? (
+                <>
+                  <StarRating rating={dish.rating} size="sm" showValue />
+                  <span className="text-xs text-[#78716c]">({dish.reviewCount} reviews)</span>
+                </>
+              ) : (
+                <span className="text-xs text-[#a8a29e] italic">Not rated</span>
+              )}
               {dish.category && (
                 <>
                   <span className="text-xs text-[#78716c]">•</span>
@@ -133,12 +146,20 @@ export default function DishCard({
                   </span>
                 )}
               </div>
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="text-sm text-[#0f766e] hover:text-[#0b5f58] font-semibold transition-colors"
-              >
-                {isExpanded ? "Less" : "Details"}
-              </button>
+              <div className="flex items-center gap-3">
+                <Link
+                  href={`/dishes/${dish.id}`}
+                  className="text-sm text-[#0f766e] hover:text-[#0b5f58] font-semibold transition-colors"
+                >
+                  View
+                </Link>
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="text-sm text-[#0f766e] hover:text-[#0b5f58] font-semibold transition-colors"
+                >
+                  {isExpanded ? "Less" : "Details"}
+                </button>
+              </div>
             </div>
 
             {isUserDish && (

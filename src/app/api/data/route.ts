@@ -88,6 +88,8 @@ export async function GET() {
     category: dish.category,
     imageUrl: dish.imageUrl ?? undefined,
     tags: Array.isArray(dish.tags) ? dish.tags : [],
+    createdAt: dish.createdAt.toISOString(),
+    updatedAt: dish.updatedAt?.toISOString() ?? dish.createdAt.toISOString(),
   }));
 
   const categories = [
@@ -109,7 +111,7 @@ export async function GET() {
   const dishPreferences = Object.fromEntries(
     preferences.map((pref) => [
       pref.dishId,
-      { wishlisted: pref.wishlisted, favorited: pref.favorited },
+      { wishlisted: pref.wishlisted, favorited: pref.favorited, recommended: pref.recommended },
     ])
   );
   const normalizedWishes = wishes.map((wish) => ({

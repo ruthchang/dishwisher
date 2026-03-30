@@ -227,6 +227,8 @@ export default function FilterPanel({
           <option value="price-asc">Price: Low to High</option>
           <option value="price-desc">Price: High to Low</option>
           <option value="name-asc">Name: A-Z</option>
+          <option value="created-desc">Recently Created</option>
+          <option value="updated-desc">Recently Updated</option>
         </select>
       </div>
     </div>

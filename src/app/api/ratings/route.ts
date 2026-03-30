@@ -25,6 +25,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const dishId = body?.dishId as string | undefined;
   const value = Number(body?.rating);
+  const text = typeof body?.text === "string" ? body.text.trim() || null : undefined;
 
   if (!dishId || Number.isNaN(value) || value < 0 || value > 5) {
     return NextResponse.json({ error: "Invalid rating payload." }, { status: 400 });
@@ -37,8 +38,8 @@ export async function POST(req: Request) {
     where: {
       dishId_userId: { dishId, userId: user.id },
     },
-    update: { value },
-    create: { dishId, userId: user.id, value },
+    update: { value, ...(text !== undefined && { text }) },
+    create: { dishId, userId: user.id, value, text: text ?? null },
   });
 
   await recalculateDish(dishId);

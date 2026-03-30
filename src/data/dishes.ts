@@ -23,6 +23,8 @@ export interface Dish {
   category: string;
   imageUrl?: string;
   tags: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DishWish {

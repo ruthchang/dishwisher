@@ -9,6 +9,7 @@ interface StarRatingProps {
   interactive?: boolean;
   onRatingChange?: (rating: number) => void;
   showValue?: boolean;
+  allowClear?: boolean;
 }
 
 export default function StarRating({
@@ -18,6 +19,7 @@ export default function StarRating({
   interactive = false,
   onRatingChange,
   showValue = false,
+  allowClear = false,
 }: StarRatingProps) {
   const [hoverRating, setHoverRating] = useState<number | null>(null);
 
@@ -37,7 +39,7 @@ export default function StarRating({
 
   const handleClick = (starIndex: number) => {
     if (interactive && onRatingChange) {
-      onRatingChange(starIndex);
+      onRatingChange(allowClear && rating === starIndex ? 0 : starIndex);
     }
   };
 
