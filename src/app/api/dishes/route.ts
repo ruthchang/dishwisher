@@ -7,10 +7,6 @@ function customRestaurantId(name: string): string {
   return `custom-${name.toLowerCase().replace(/\s+/g, "-")}`;
 }
 
-function yelpRestaurantId(yelpBusinessId: string): string {
-  return `yelp-${yelpBusinessId}`;
-}
-
 export async function POST(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,7 +19,7 @@ export async function POST(req: Request) {
 
   const tags = Array.isArray(body.tags) ? body.tags : [];
   const isCustom = body.restaurantId.startsWith("custom-");
-  const isYelp = body.restaurantId.startsWith("yelp-");
+  const isYelp = body.restaurantId.startsWith("yelp-") || body.restaurantId.startsWith("geoapify-");
   const restaurantName = body.customRestaurantName?.trim() || "";
   const restaurantAddress = body.customRestaurantAddress?.trim() || "";
   const restaurantCuisine = body.customRestaurantCuisine?.trim() || "Restaurant";
@@ -49,9 +45,9 @@ export async function POST(req: Request) {
     });
   }
   if (isYelp && restaurantName) {
-    const parsedYelpId = body.restaurantId.replace(/^yelp-/, "").trim();
+    const parsedYelpId = body.restaurantId.replace(/^(yelp|geoapify)-/, "").trim();
     if (parsedYelpId) {
-      restaurantId = yelpRestaurantId(parsedYelpId);
+      restaurantId = body.restaurantId;
       await db.restaurant.upsert({
         where: { id: restaurantId },
         update: {
