@@ -606,7 +606,7 @@ export default function AddDishModal({
 
   const handleRestaurantInputChange = (value: string) => {
     setShowRestaurantSuggestions(true);
-    const normalizedValue = value.trim().toLowerCase();
+    const normalizedValue = value.toLowerCase();
     const existingMatch = existingRestaurants.find(
       (restaurant) => restaurant.name.trim().toLowerCase() === normalizedValue
     );
