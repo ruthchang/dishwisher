@@ -1044,16 +1044,34 @@ export default function AddDishModal({
                 <label className="block text-sm font-semibold text-[#3e2723] mb-2">
                   Photo
                 </label>
-                <input
-                  id="imageUpload"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleImageUpload}
-                  className="w-full px-4 py-3 bg-white border-2 border-[#e7e5e4] rounded-2xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] file:mr-3 file:px-3 file:py-1.5 file:border-0 file:rounded-lg file:bg-[#f0fdfa] file:text-[#0f766e] file:font-semibold file:cursor-pointer"
-                />
-                <p className="text-xs text-[#5b463f] mt-2">
-                  Choose a photo or take one now on supported devices. Images are auto-compressed up to 5MB.
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: "imageUpload", label: "Photo Library", detail: "Choose an existing photo", camera: false },
+                    { id: "cameraUpload", label: "Take Photo", detail: "Open your camera", camera: true },
+                  ].map((option) => (
+                    <div key={option.id} className="relative">
+                      <input
+                        id={option.id}
+                        type="file"
+                        accept="image/*"
+                        capture={option.camera ? "environment" : undefined}
+                        onChange={handleImageUpload}
+                        disabled={imageProcessing}
+                        className="peer sr-only"
+                        aria-label={option.label}
+                      />
+                      <label
+                        htmlFor={option.id}
+                        className="flex h-full cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-2 border-[#e7e5e4] bg-white px-3 py-3 text-center text-[#0f766e] hover:bg-[#f0fdfa] peer-focus-visible:ring-4 peer-focus-visible:ring-[#14b8a6]/20 peer-disabled:pointer-events-none peer-disabled:opacity-50"
+                      >
+                        <span className="text-sm font-semibold">{option.label}</span>
+                        <span className="text-xs text-[#5b463f]">{option.detail}</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-[#5b463f] mt-2" role="status">
+                  {imageProcessing ? "Processing image..." : "Images are auto-compressed up to 5MB."}
                 </p>
                 {imageError && (
                   <p className="text-xs text-[#b91c1c] mt-2">{imageError}</p>
