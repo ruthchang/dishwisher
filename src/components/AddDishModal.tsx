@@ -742,10 +742,10 @@ export default function AddDishModal({
         );
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="panel-card rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="panel-card rounded-3xl max-w-lg w-full max-h-[calc(100dvh-1rem)] sm:max-h-[90dvh] overflow-y-auto overscroll-contain">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-[#0f766e] via-[#14b8a6] to-[#99f6e4] px-6 py-5 flex items-center justify-between rounded-t-3xl">
+        <div className="sticky top-0 bg-gradient-to-r from-[#0f766e] via-[#14b8a6] to-[#99f6e4] px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between rounded-t-3xl z-10">
           <h2 className="text-xl font-bold text-white accent-text-shadow">
             {modalTitle}
           </h2>
@@ -772,9 +772,9 @@ export default function AddDishModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-6">
           {!isEditing && (
-            <div className="flex items-end justify-between gap-3">
+            <div className="flex flex-wrap items-end justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p className="block text-sm font-semibold text-[#3e2723] mb-2">Add Type</p>
                 <div className="inline-flex max-w-full rounded-2xl border-2 border-[#e7e5e4] bg-[#f7f7f5] p-1 overflow-hidden">
@@ -1158,7 +1158,7 @@ export default function AddDishModal({
                       }
                     }}
                     placeholder="Add your own tag..."
-                    className="flex-1 px-4 py-2.5 bg-white border-2 border-[#e7e5e4] rounded-xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e] text-sm"
+                    className="min-w-0 flex-1 px-4 py-2.5 bg-white border-2 border-[#e7e5e4] rounded-xl focus:border-[#14b8a6] focus:ring-4 focus:ring-[#14b8a6]/20 outline-none transition-all text-[#3e2723] placeholder:text-[#a8a29e] text-sm"
                   />
                   <button
                     type="button"
