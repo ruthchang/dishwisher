@@ -128,10 +128,10 @@ export default function MenuView({
               {categories.map((category) => (
                 <section key={category}>
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-base font-serif font-semibold uppercase tracking-widest text-[#0f766e]">
+                    <h3 className="min-w-0 shrink-0 max-w-full truncate whitespace-nowrap text-base font-serif font-semibold uppercase tracking-widest text-[#0f766e]">
                       {category}
                     </h3>
-                    <div className="h-px w-full bg-[#d6d3d1]" />
+                    <div className="h-px min-w-0 flex-1 bg-[#d6d3d1]" />
                   </div>
                   <div className="divide-y divide-[#e7e5e4]">
                     {dishesByCategory[category]
