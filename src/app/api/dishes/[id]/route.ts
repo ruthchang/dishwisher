@@ -58,10 +58,6 @@ export async function GET(
   });
 }
 
-function yelpRestaurantId(yelpBusinessId: string): string {
-  return `yelp-${yelpBusinessId}`;
-}
-
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -84,7 +80,7 @@ export async function PATCH(
 
   const tags = Array.isArray(body.tags) ? body.tags : [];
   const isCustom = body.restaurantId.startsWith("custom-");
-  const isYelp = body.restaurantId.startsWith("yelp-");
+  const isYelp = body.restaurantId.startsWith("yelp-") || body.restaurantId.startsWith("geoapify-");
   const restaurantName = body.customRestaurantName?.trim() || "";
   const restaurantAddress = body.customRestaurantAddress?.trim() || "";
   const restaurantCuisine = body.customRestaurantCuisine?.trim() || "Restaurant";
@@ -110,9 +106,9 @@ export async function PATCH(
     });
   }
   if (isYelp && restaurantName) {
-    const parsedYelpId = body.restaurantId.replace(/^yelp-/, "").trim();
+    const parsedYelpId = body.restaurantId.replace(/^(yelp|geoapify)-/, "").trim();
     if (parsedYelpId) {
-      restaurantId = yelpRestaurantId(parsedYelpId);
+      restaurantId = body.restaurantId;
       await db.restaurant.upsert({
         where: { id: restaurantId },
         update: {
