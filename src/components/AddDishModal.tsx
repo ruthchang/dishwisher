@@ -31,6 +31,7 @@ interface AddDishModalProps {
 }
 
 interface YelpRestaurantMatch {
+  provider?: "geoapify" | "yelp";
   id: string;
   name: string;
   address: string;
@@ -217,7 +218,7 @@ export default function AddDishModal({
 
       if (
         editingDish.restaurantId.startsWith("custom-") ||
-        editingDish.restaurantId.startsWith("yelp-")
+        editingDish.restaurantId.startsWith("yelp-") || editingDish.restaurantId.startsWith("geoapify-")
       ) {
         setUseCustomRestaurant(true);
         const restaurantName =
@@ -229,9 +230,10 @@ export default function AddDishModal({
             .join(" ");
         setCustomRestaurant(restaurantName);
         setRestaurantId("");
-        if (editingDish.restaurantId.startsWith("yelp-")) {
+        if (/^(yelp|geoapify)-/.test(editingDish.restaurantId)) {
           setSelectedYelpMatch({
-            id: editingDish.restaurantId.replace(/^yelp-/, ""),
+            id: editingDish.restaurantId.replace(/^(yelp|geoapify)-/, ""),
+            provider: editingDish.restaurantId.startsWith("geoapify-") ? "geoapify" : "yelp",
             name: restaurantName,
             address: editingDish.customRestaurantAddress || "",
             cuisine: editingDish.customRestaurantCuisine || "Restaurant",
@@ -514,9 +516,11 @@ export default function AddDishModal({
   };
 
   const searchYelpRestaurants = async () => {
-    const query = customRestaurant.trim();
+    const [restaurantName, ...cityParts] = customRestaurant.trim().split(",");
+    const query = restaurantName.trim();
+    const city = cityParts.join(",").trim();
     if (query.length < 2) {
-      setYelpError("Type at least 2 characters to search Yelp.");
+      setYelpError("Type at least 2 characters to search.");
       return;
     }
 
@@ -525,8 +529,9 @@ export default function AddDishModal({
     setYelpMatches([]);
 
     try {
-      const coords = await getBestEffortCoordinates();
+      const coords = city ? null : await getBestEffortCoordinates();
       const params = new URLSearchParams({ q: query });
+      if (city) params.set("city", city);
       if (coords) {
         params.set("lat", String(coords.latitude));
         params.set("lng", String(coords.longitude));
@@ -534,16 +539,16 @@ export default function AddDishModal({
       const response = await fetch(`/api/restaurants/search?${params.toString()}`);
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(payload.error || "Could not search Yelp right now.");
+        throw new Error(payload.error || "Could not search restaurants right now.");
       }
       const matches = Array.isArray(payload.matches) ? payload.matches : [];
       setYelpMatches(matches);
       if (matches.length === 0) {
-        setYelpError("No Yelp matches found nearby. You can still enter manually.");
+        setYelpError("No matching restaurants found. You can still enter manually.");
       }
     } catch (error) {
       setYelpError(
-        error instanceof Error ? error.message : "Could not search Yelp right now."
+        error instanceof Error ? error.message : "Could not search restaurants right now."
       );
     } finally {
       setYelpLoading(false);
@@ -659,7 +664,7 @@ export default function AddDishModal({
       .replace(/\s+/g, "-")}`;
     const finalRestaurantId = useCustomRestaurant
       ? selectedYelpMatch
-        ? `yelp-${selectedYelpMatch.id}`
+        ? `${selectedYelpMatch.provider || "yelp"}-${selectedYelpMatch.id}`
         : manualRestaurantId
       : restaurantId;
 
@@ -890,15 +895,15 @@ export default function AddDishModal({
                     disabled={yelpLoading}
                     className="px-3.5 py-2 text-xs font-semibold rounded-md border border-[#d6d3d1] text-[#3e2723] hover:bg-[#f7f7f5] disabled:opacity-60"
                   >
-                    {yelpLoading ? "Searching..." : "Find Nearby on Yelp"}
+                    {yelpLoading ? "Searching..." : "Find Restaurant"}
                   </button>
                   <span className="text-xs text-[#78716c]">
-                    For matching only. Data from Yelp.
+                    For distant restaurants, enter name, city, country.
                   </span>
                 </div>
                 {selectedYelpMatch && (
                   <div className="text-xs text-[#0f766e] bg-[#ecfeff] border border-[#99f6e4] rounded-md px-3 py-2">
-                    Matched to Yelp listing: {selectedYelpMatch.name}
+                    Matched to {selectedYelpMatch.provider === "geoapify" ? "Geoapify" : "Yelp"} listing: {selectedYelpMatch.name}
                     {selectedYelpMatch.yelpUrl && (
                       <>
                         {" "}
@@ -931,13 +936,14 @@ export default function AddDishModal({
                     <div className="px-3 py-2 text-[11px] text-[#78716c] bg-[#fafaf9] border-t border-[#f0efed]">
                       Powered by{" "}
                       <a
-                        href="https://www.yelp.com"
+                        href="https://www.geoapify.com"
                         target="_blank"
                         rel="noreferrer"
                         className="underline hover:text-[#5b463f]"
                       >
-                        Yelp
+                        Geoapify
                       </a>
+                      {" · © OpenStreetMap contributors"}
                     </div>
                   </div>
                 )}
