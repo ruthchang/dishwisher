@@ -460,7 +460,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-30 border-b border-[#e7e5e4] bg-white/95 backdrop-blur">
+      <header className="relative lg:sticky lg:top-0 z-30 border-b border-[#e7e5e4] bg-white/95 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
             <div className="shrink-0 flex items-center gap-1.5 rounded-2xl border border-[#eceae8] bg-[linear-gradient(180deg,#fffefb_0%,#fafaf9_100%)] px-2.5 py-1.5 shadow-[0_1px_0_rgba(62,39,35,0.04)]">
@@ -480,7 +480,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="hidden md:block flex-1 max-w-2xl">
+            <div className="w-full min-w-0 md:flex-1 max-w-2xl">
               <input
                 type="text"
                 value={searchQuery}
@@ -495,7 +495,7 @@ export default function Home() {
                 className="w-full px-4 py-2.5 bg-white border border-[#d6d3d1] rounded-md focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none text-[#3e2723] placeholder:text-[#a8a29e]"
               />
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 md:ml-auto md:w-auto md:justify-end">
+            <div className="flex w-full flex-wrap items-center gap-2 md:ml-auto md:w-auto md:justify-end mobile-actions">
               {currentUser ? (
                 <>
                   <span className="hidden sm:block text-sm text-[#5b463f]">
@@ -579,8 +579,8 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6 rounded-2xl border border-[#eceae8] bg-[linear-gradient(180deg,#fffefb_0%,#fafaf9_100%)] px-4 py-3 sm:px-5">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
+        <div className="mb-6 rounded-2xl border border-[#eceae8] bg-[linear-gradient(180deg,#fffefb_0%,#fafaf9_100%)] px-3 py-3 sm:px-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#78716c]">
@@ -590,7 +590,7 @@ export default function Home() {
                 Switch between the main browse view, wishes, favorites, and recommendations.
               </p>
             </div>
-            <div className="grid w-full grid-cols-4 rounded-xl border border-[#d6d3d1] bg-white p-1 shadow-[0_1px_0_rgba(62,39,35,0.04)] sm:inline-flex sm:w-auto">
+            <div className="grid w-full grid-cols-2 min-[480px]:grid-cols-4 rounded-xl border border-[#d6d3d1] bg-white p-1 shadow-[0_1px_0_rgba(62,39,35,0.04)] sm:inline-flex sm:w-auto">
               <button
                 onClick={() => setCollectionView("main")}
                 className={`px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
@@ -647,7 +647,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mb-5 flex items-end justify-between gap-4">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-2 sm:gap-4">
           <div>
             <h1 className="text-2xl font-bold text-[#2d1f1a]">
               {collectionView === "wishes"
@@ -963,7 +963,7 @@ export default function Home() {
 
       {showAuth && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="panel-card rounded-xl w-full max-w-md p-6">
+          <div className="panel-card rounded-xl w-full max-w-md p-4 sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <h2 className="text-xl font-bold text-[#2d1f1a]">
               {authMode === "login" ? "Log in" : "Create account"}
             </h2>
