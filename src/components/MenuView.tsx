@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Dish, Restaurant } from "@/data/dishes";
 import StarRating from "./StarRating";
 import RotatableImage from "./RotatableImage";
@@ -47,6 +48,7 @@ export default function MenuView({
   onToggleWishlist,
   onToggleFavorite,
 }: MenuViewProps) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const dishesByRestaurant = dishes.reduce<Record<string, Dish[]>>((acc, dish) => {
     if (!acc[dish.restaurantId]) acc[dish.restaurantId] = [];
     acc[dish.restaurantId].push(dish);
@@ -78,13 +80,24 @@ export default function MenuView({
         return (
           <article
             key={restaurantId}
-            className="rounded-xl p-5 sm:p-6 border border-[#e7e5e4] shadow-[0_8px_24px_rgba(62,39,35,0.06)] bg-[linear-gradient(180deg,#fffefb_0%,#fff_100%)]"
+            className="rounded-xl border border-[#e7e5e4] bg-[#fffefb] overflow-hidden"
           >
-            <header className="text-center border-b border-[#e7e5e4] pb-4 mb-5">
+            <button type="button" aria-expanded={Boolean(expanded[restaurantId])}
+              onClick={() => setExpanded((prev) => ({ ...prev, [restaurantId]: !prev[restaurantId] }))}
+              className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left hover:bg-[#f7f7f5]">
+              <span className="min-w-0">
+                <span className="block font-semibold text-[#2d1f1a]">{restaurant?.name || "Custom Restaurant"}</span>
+                <span className="block text-xs text-[#5b463f]">{restaurantDishes.length} {restaurantDishes.length === 1 ? "dish" : "dishes"}</span>
+              </span>
+              <svg aria-hidden="true" className={`h-5 w-5 shrink-0 text-[#0f766e] transition-transform ${expanded[restaurantId] ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            {expanded[restaurantId] && (
+            <div className="border-t border-[#e7e5e4] px-4 py-6 sm:px-8 sm:py-8">
+            <header className="text-center border-y border-[#b8aea3] py-5 mb-6">
               <p className="text-[10px] uppercase tracking-[0.25em] text-[#78716c]">
-                House Menu
+                DishWisher Menu
               </p>
-              <h2 className="mt-1 text-2xl sm:text-3xl font-bold text-[#2d1f1a]">
+              <h2 className="mt-1 text-2xl sm:text-3xl font-serif font-semibold text-[#2d1f1a]">
                 {restaurant?.name || "Custom Restaurant"}
               </h2>
               {(restaurant?.cuisine || restaurant?.address) && (
@@ -115,12 +128,12 @@ export default function MenuView({
               {categories.map((category) => (
                 <section key={category}>
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-[#0f766e] whitespace-nowrap">
+                    <h3 className="text-base font-serif font-semibold uppercase tracking-widest text-[#0f766e]">
                       {category}
                     </h3>
                     <div className="h-px w-full bg-[#d6d3d1]" />
                   </div>
-                  <div className="rounded-lg overflow-hidden bg-white border border-[#eceae8]">
+                  <div className="divide-y divide-[#e7e5e4]">
                     {dishesByCategory[category]
                       .slice()
                       .sort((a, b) => a.name.localeCompare(b.name))
@@ -128,62 +141,41 @@ export default function MenuView({
                         return (
                           <div
                             key={dish.id}
-                            className="grid grid-cols-1 gap-3 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_96px] sm:px-4 sm:py-3.5 border-b border-[#f0efed] last:border-b-0"
+                            className="py-3"
                           >
-                            <div className="min-w-0">
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:gap-0 min-w-0">
-                                <div className="flex items-baseline gap-0 min-w-0 flex-1">
-                                  <p className="font-semibold text-[#2d1f1a] truncate">{dish.name}</p>
-                                  <span className="hidden sm:block flex-1 border-b border-dotted border-[#cfcac7] translate-y-[-2px]" />
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                                  <WishFavoriteControls
-                                    wishlisted={Boolean(dishPreferences[dish.id]?.wishlisted)}
-                                    favorited={Boolean(dishPreferences[dish.id]?.favorited)}
-                                    onToggleWishlist={() =>
-                                      onToggleWishlist?.(
-                                        dish.id,
-                                        !Boolean(dishPreferences[dish.id]?.wishlisted)
-                                      )
-                                    }
-                                    onToggleFavorite={() =>
-                                      onToggleFavorite?.(
-                                        dish.id,
-                                        !Boolean(dishPreferences[dish.id]?.favorited)
-                                      )
-                                    }
-                                  />
-                                  {dish.price !== null && (
-                                    <span className="text-sm font-bold text-[#0f766e] whitespace-nowrap">
-                                      ${dish.price.toFixed(2)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                <StarRating rating={dish.rating} size="sm" showValue />
-                                {dish.description && (
-                                  <p className="hidden sm:block text-xs text-[#78716c] truncate italic">
-                                    {dish.description}
-                                  </p>
-                                )}
-                              </div>
+                            <div className="flex items-baseline gap-2">
+                              <p className="min-w-0 font-serif text-lg font-semibold leading-tight text-[#2d1f1a]">{dish.name}</p>
+                              <span aria-hidden="true" className="min-w-2 flex-1 border-b border-dotted border-[#b8aea3]" />
+                              {dish.price !== null && (
+                                <span className="shrink-0 font-serif text-base tabular-nums text-[#2d1f1a]">${dish.price.toFixed(2)}</span>
+                              )}
                             </div>
-                            <div className="h-[140px] w-full sm:h-[72px] sm:w-[96px] rounded-md overflow-hidden bg-[#f7f7f5] border border-[#e7e5e4] justify-self-end">
-                              <RotatableImage
-                                key={`menu:${dish.id}`}
-                                src={dish.imageUrl || "/dishwisher-photo-placeholder.svg"}
-                                alt={dish.name}
-                                className="w-full h-full object-cover"
-                                storageKey={`menu:${dish.id}`}
+                            {dish.description && <p className="mt-1 text-sm leading-relaxed text-[#5b463f]">{dish.description}</p>}
+                            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                              <StarRating rating={dish.rating} size="sm" showValue />
+                              <WishFavoriteControls
+                                wishlisted={Boolean(dishPreferences[dish.id]?.wishlisted)}
+                                favorited={Boolean(dishPreferences[dish.id]?.favorited)}
+                                onToggleWishlist={() => onToggleWishlist?.(dish.id, !Boolean(dishPreferences[dish.id]?.wishlisted))}
+                                onToggleFavorite={() => onToggleFavorite?.(dish.id, !Boolean(dishPreferences[dish.id]?.favorited))}
                               />
                             </div>
+                            {dish.imageUrl && (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer text-xs text-[#0f766e]">View photo</summary>
+                                <div className="mt-2 aspect-video max-w-xs overflow-hidden rounded-md">
+                                  <RotatableImage src={dish.imageUrl} alt={dish.name} className="w-full h-full object-cover" storageKey={`menu:${dish.id}`} />
+                                </div>
+                              </details>
+                            )}
                           </div>
                         )})}
                   </div>
                 </section>
               ))}
             </div>
+            </div>
+            )}
           </article>
         );
       })}
