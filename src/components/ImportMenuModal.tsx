@@ -84,9 +84,9 @@ export default function ImportMenuModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="panel-card rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gradient-to-r from-[#0f766e] via-[#14b8a6] to-[#99f6e4] px-6 py-5 flex items-center justify-between rounded-t-3xl">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="panel-card rounded-3xl max-w-2xl w-full max-h-[calc(100dvh-1rem)] sm:max-h-[90dvh] overflow-y-auto overscroll-contain">
+        <div className="sticky top-0 bg-gradient-to-r from-[#0f766e] via-[#14b8a6] to-[#99f6e4] px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between rounded-t-3xl z-10">
           <div>
             <h2 className="text-xl font-bold text-white accent-text-shadow">
               Import Menu
@@ -105,7 +105,7 @@ export default function ImportMenuModal({
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <input
             type="file"
             accept="image/*"
