@@ -152,7 +152,17 @@ export default function MenuView({
                             </div>
                             {dish.description && <p className="mt-1 text-sm leading-relaxed text-[#5b463f]">{dish.description}</p>}
                             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                              <StarRating rating={dish.rating} size="sm" showValue />
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                {dish.reviewCount > 0 ? (
+                                  <>
+                                    <span className="text-xs text-[#5b463f]">Average</span>
+                                    <StarRating rating={dish.rating} size="sm" showValue />
+                                    <span className="text-xs text-[#78716c]">({dish.reviewCount} {dish.reviewCount === 1 ? "review" : "reviews"})</span>
+                                  </>
+                                ) : (
+                                  <span className="text-xs italic text-[#78716c]">Not yet rated</span>
+                                )}
+                              </div>
                               <WishFavoriteControls
                                 wishlisted={Boolean(dishPreferences[dish.id]?.wishlisted)}
                                 favorited={Boolean(dishPreferences[dish.id]?.favorited)}
