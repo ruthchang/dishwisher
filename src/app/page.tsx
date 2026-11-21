@@ -362,9 +362,10 @@ export default function Home() {
     let result = [...sourceDishes];
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.trim().toLowerCase();
       result = result.filter(
         (dish) =>
+          (displayMode === "menu" && (userRestaurants[dish.restaurantId]?.name || "Custom Restaurant").toLowerCase().includes(query)) ||
           dish.name.toLowerCase().includes(query) ||
           dish.description.toLowerCase().includes(query) ||
           dish.tags.some((tag) => tag.toLowerCase().includes(query))
@@ -430,6 +431,7 @@ export default function Home() {
     return result;
   }, [
     sourceDishes,
+    displayMode,
     searchQuery,
     selectedCategories,
     selectedCuisines,
@@ -482,11 +484,14 @@ export default function Home() {
             </div>
             <div className="w-full min-w-0 md:flex-1 max-w-2xl">
               <input
-                type="text"
+                type="search"
+                aria-label={displayMode === "menu" ? "Search restaurants or dishes" : "Search dishes"}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={
-                  collectionView === "wishes"
+                  displayMode === "menu"
+                    ? "Search restaurants or dishes"
+                    : collectionView === "wishes"
                     ? "Search wishlisted dishes"
                     : collectionView === "favorites"
                       ? "Search favorite dishes"
