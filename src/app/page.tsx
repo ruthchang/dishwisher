@@ -11,9 +11,6 @@ import FilterPanel from "@/components/FilterPanel";
 import AddDishModal from "@/components/AddDishModal";
 import MenuView from "@/components/MenuView";
 import ImportMenuModal from "@/components/ImportMenuModal";
-import ForkWishIcon from "@/components/ForkWishIcon";
-import FavoritePlateIcon from "@/components/FavoritePlateIcon";
-import KnifeIcon from "@/components/KnifeIcon";
 import type { MenuDraftDish } from "@/lib/menu-import";
 
 interface UserRestaurantData {
@@ -464,25 +461,25 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       <header className="relative lg:sticky lg:top-0 z-30 border-b border-[#e7e5e4] bg-white/95 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-            <div className="shrink-0 flex items-center gap-1.5 rounded-2xl border border-[#eceae8] bg-[linear-gradient(180deg,#fffefb_0%,#fafaf9_100%)] px-2.5 py-1.5 shadow-[0_1px_0_rgba(62,39,35,0.04)]">
-              <Image
-                src="/dishwisher-logo.svg"
-                alt="DishWisher logo"
-                width={44}
-                height={44}
-                className="h-10 w-10 shrink-0"
-              />
-              <div className="min-w-0 leading-none">
-                <div className="text-[1.18rem] font-bold tracking-[-0.03em] text-[#2d1f1a]">
-                  DishWisher
-                </div>
-                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0f766e]/75">
-                  Dish Tracker
-                </p>
-              </div>
+          <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 md:flex md:gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <Image src="/dishwisher-logo.svg" alt="" width={36} height={36} className="h-8 w-8 shrink-0" />
+              <span className="text-lg font-bold tracking-tight text-[#2d1f1a]">DishWisher</span>
             </div>
-            <div className="w-full min-w-0 md:flex-1 max-w-2xl">
+            <div className="justify-self-end md:order-last">
+              {currentUser ? (
+                <details className="relative">
+                  <summary aria-label="Account menu" className="list-none [&::-webkit-details-marker]:hidden cursor-pointer flex h-11 w-11 items-center justify-center rounded-full border border-[#e7e5e4] text-sm font-semibold text-[#0f766e]">
+                    {currentUser.name?.charAt(0).toUpperCase() || "•"}
+                  </summary>
+                  <div className="absolute right-0 top-full mt-1 z-50 min-w-36 rounded-xl border border-[#e7e5e4] bg-white p-2 shadow-lg">
+                    <p className="px-2 py-1 text-xs text-[#5b463f]">{currentUser.name}</p>
+                    <button onClick={handleLogout} className="w-full min-h-11 rounded-lg text-left px-2 text-sm font-semibold hover:bg-[#f7f7f5]">Log out</button>
+                  </div>
+                </details>
+              ) : <button onClick={() => { setAuthMode("login"); setShowAuth(true); }} className="min-h-11 px-3 text-sm font-semibold">Log in</button>}
+            </div>
+            <div className="col-span-2 w-full min-w-0 md:flex-1">
               <input
                 type="search"
                 aria-label={displayMode === "menu" ? "Search restaurants or dishes" : "Search dishes"}
@@ -492,193 +489,41 @@ export default function Home() {
                   displayMode === "menu"
                     ? "Search restaurants or dishes"
                     : collectionView === "wishes"
-                    ? "Search wishlisted dishes"
+                    ? "Search wishes"
                     : collectionView === "favorites"
                       ? "Search favorite dishes"
-                      : "Search dishes, tags, or descriptions"
+                      : "Search dishes"
                 }
-                className="w-full px-4 py-2.5 bg-white border border-[#d6d3d1] rounded-md focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none text-[#3e2723] placeholder:text-[#a8a29e]"
+                className="w-full px-3 py-2 min-h-11 bg-white border border-[#d6d3d1] rounded-md focus:border-[#14b8a6] focus:ring-2 focus:ring-[#14b8a6]/20 outline-none text-[#3e2723] placeholder:text-[#a8a29e]"
               />
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 md:ml-auto md:w-auto md:justify-end mobile-actions">
-              {currentUser ? (
-                <>
-                  <span className="hidden sm:block text-sm text-[#5b463f]">
-                    {currentUser.name}
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="px-3 py-2 text-xs sm:text-sm font-semibold border border-[#d6d3d1] rounded-md text-[#3e2723] hover:bg-[#f7f7f5]"
-                  >
-                    Log out
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => {
-                    setAuthMode("login");
-                    setShowAuth(true);
-                  }}
-                  className="px-3 py-2 text-xs sm:text-sm font-semibold border border-[#d6d3d1] rounded-md text-[#3e2723] hover:bg-[#f7f7f5]"
-                >
-                  Log in
-                </button>
-              )}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="lg:hidden px-3 py-2 text-xs sm:text-sm font-semibold border border-[#d6d3d1] rounded-md text-[#3e2723] hover:bg-[#f7f7f5]"
-              >
-                {showFilters ? "Hide Filters" : "Filters"}
-              </button>
-              {currentUser && (
-                <>
-                  <button
-                    onClick={() => setShowImportMenu(true)}
-                    className="px-3 py-2 text-xs sm:text-sm font-semibold border border-[#99f6e4] rounded-md text-[#0f766e] hover:bg-[#f0fdfa] transition-colors"
-                  >
-                    <span className="sm:hidden">Import</span>
-                    <span className="hidden sm:inline">Import Menu</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDraftDish(null);
-                      setShowAddDish(true);
-                    }}
-                    className="px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-md bg-[#0f766e] text-white hover:bg-[#0b5f58] transition-colors"
-                  >
-                    Add Dish
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#78716c] mb-1.5">
-                Browse
-              </p>
-              <div className="inline-flex rounded-xl border border-[#d6d3d1] bg-[#fcfcfb] p-1 shadow-[0_1px_0_rgba(62,39,35,0.04)]">
-                <button
-                  onClick={() => setDisplayMode("cards")}
-                  className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-semibold rounded-lg transition-colors ${
-                    displayMode === "cards"
-                      ? "bg-[#0f766e] text-white shadow-sm"
-                      : "text-[#3e2723] hover:bg-white"
-                  }`}
-                >
-                  Dishes
-                </button>
-                <button
-                  onClick={() => setDisplayMode("menu")}
-                  className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-semibold rounded-lg transition-colors ${
-                    displayMode === "menu"
-                      ? "bg-[#0f766e] text-white shadow-sm"
-                      : "text-[#3e2723] hover:bg-white"
-                  }`}
-                >
-                  Menus
-                </button>
+            <div className="col-span-2 flex flex-wrap items-center gap-1 justify-between md:justify-end">
+              <div className="flex rounded-lg border border-[#e7e5e4] p-0.5 shrink-0">
+                {(["cards", "menu"] as const).map(mode => (
+                  <button key={mode} aria-pressed={displayMode === mode} onClick={() => setDisplayMode(mode)} className={`min-h-10 px-2 sm:px-3 rounded-md text-xs font-semibold ${displayMode === mode ? "bg-[#0f766e] text-white" : "text-[#3e2723]"}`}>{mode === "cards" ? "Dishes" : "Menus"}</button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button aria-label="Filters" aria-expanded={showFilters} onClick={() => setShowFilters(!showFilters)} className={`lg:hidden min-h-11 px-2 rounded-md text-xs font-semibold ${showFilters ? "bg-[#ccfbf1] text-[#0f766e]" : "text-[#3e2723]"}`}>Filters</button>
+                {currentUser && <>
+                  <button onClick={() => setShowImportMenu(true)} className="min-h-11 px-2 text-xs font-semibold text-[#0f766e]">Import</button>
+                  <button onClick={() => { setDraftDish(null); setShowAddDish(true); }} className="min-h-11 px-2.5 text-xs font-semibold rounded-lg bg-[#0f766e] text-white whitespace-nowrap">+ Dish</button>
+                </>}
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
-        <div className="mb-6 rounded-2xl border border-[#eceae8] bg-[linear-gradient(180deg,#fffefb_0%,#fafaf9_100%)] px-3 py-3 sm:px-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#78716c]">
-                Collection
-              </p>
-              <p className="text-sm text-[#5b463f] mt-1">
-                Switch between the main browse view, wishes, favorites, and recommendations.
-              </p>
-            </div>
-            <div className="grid w-full grid-cols-2 min-[480px]:grid-cols-4 rounded-xl border border-[#d6d3d1] bg-white p-1 shadow-[0_1px_0_rgba(62,39,35,0.04)] sm:inline-flex sm:w-auto">
-              <button
-                onClick={() => setCollectionView("main")}
-                className={`px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
-                  collectionView === "main"
-                    ? "bg-[#3e2723] text-white shadow-sm"
-                    : "text-[#3e2723] hover:bg-[#f7f7f5]"
-                }`}
-              >
-                Main
-              </button>
-              <button
-                onClick={() => setCollectionView("wishes")}
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
-                  collectionView === "wishes"
-                    ? "bg-[#3e2723] text-white shadow-sm"
-                    : "text-[#3e2723] hover:bg-[#f7f7f5]"
-                }`}
-              >
-                <ForkWishIcon
-                  active={collectionView === "wishes"}
-                  className="pointer-events-none w-4 h-4"
-                />
-                Wishes
-              </button>
-              <button
-                onClick={() => setCollectionView("favorites")}
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
-                  collectionView === "favorites"
-                    ? "bg-[#3e2723] text-white shadow-sm"
-                    : "text-[#3e2723] hover:bg-[#f7f7f5]"
-                }`}
-              >
-                <FavoritePlateIcon
-                  active={collectionView === "favorites"}
-                  className="pointer-events-none w-5 h-5"
-                />
-                Favorites
-              </button>
-              <button
-                onClick={() => setCollectionView("recommended")}
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:px-4 sm:text-sm font-semibold rounded-lg transition-colors ${
-                  collectionView === "recommended"
-                    ? "bg-[#3e2723] text-white shadow-sm"
-                    : "text-[#3e2723] hover:bg-[#f7f7f5]"
-                }`}
-              >
-                <KnifeIcon
-                  active={collectionView === "recommended"}
-                  className="pointer-events-none w-4 h-4"
-                />
-                Recommended
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-2 sm:gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[#2d1f1a]">
-              {collectionView === "wishes"
-                ? "Wish List"
-                : collectionView === "favorites"
-                  ? "Favorites"
-                  : collectionView === "recommended"
-                    ? "Recommended"
-                    : "Dishes"}
-            </h1>
-            <p className="text-sm text-[#5b463f] mt-1">
-              {`Showing ${filteredAndSortedDishes.length} ${filteredAndSortedDishes.length === 1 ? "dish" : "dishes"}`}
-            </p>
-          </div>
-          {mounted && sourceDishes.length > 0 && (
-            <p className="text-sm text-[#5b463f]">
-              {sourceDishes.length}{" "}
-              {collectionView === "wishes"
-                ? "wishlisted dishes"
-                : collectionView === "favorites"
-                  ? "favorite dishes"
-                  : collectionView === "recommended"
-                    ? "recommended dishes"
-                    : "dishes added by you"}
-            </p>
-          )}
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-5">
+        <nav aria-label="Collection" className="mb-3 flex items-center gap-1 border-b border-[#e7e5e4] sm:gap-4">
+          {([{id:"main",label:"Main"},{id:"wishes",label:"Wishes"},{id:"favorites",label:"Favorites"},{id:"recommended",label:"Recommended"}] as const).map(tab => (
+            <button key={tab.id} aria-current={collectionView === tab.id ? "page" : undefined} onClick={() => setCollectionView(tab.id)} className={`flex-1 sm:flex-none min-h-11 px-1 sm:px-4 whitespace-nowrap border-b-2 text-xs sm:text-sm font-semibold ${collectionView === tab.id ? "border-[#0f766e] text-[#0f766e]" : "border-transparent text-[#5b463f]"}`}>{tab.label}</button>
+          ))}
+        </nav>
+        <div className="mb-3 flex items-baseline justify-between gap-2">
+          <h1 className="text-xl font-bold text-[#2d1f1a]">{collectionView === "wishes" ? "Wish List" : collectionView === "favorites" ? "Favorites" : collectionView === "recommended" ? "Recommended" : "Dishes"}</h1>
+          <p className="text-xs text-[#5b463f]">{filteredAndSortedDishes.length} {filteredAndSortedDishes.length === 1 ? "dish" : "dishes"}</p>
         </div>
 
         {collectionView === "wishes" || collectionView === "favorites" || collectionView === "recommended" ? (
