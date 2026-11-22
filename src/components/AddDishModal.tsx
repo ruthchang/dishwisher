@@ -1016,15 +1016,14 @@ export default function AddDishModal({
                     onRatingChange={setRating}
                     allowClear
                   />
-                  {rating === 0 && (
-                    <p className="text-xs text-[#78716c] mt-1">No rating — tap a star to rate</p>
-                  )}
+                  <button type="button" aria-pressed={rating === 0} onClick={() => setRating(0)} className={`mt-2 min-h-11 px-3 rounded-lg text-sm border ${rating === 0 ? "bg-[#ccfbf1] text-[#0f766e]" : "text-[#5b463f]"}`}>Not yet rated</button>
                 </div>
               </div>
 
             </>
           )}
 
+          {entryMode === "wish" && <p className="text-sm text-[#78716c]">Not yet rated</p>}
           {entryMode === "review" && (
             <>
               {/* Description */}
