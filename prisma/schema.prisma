@@ -106,3 +106,16 @@ model Rating {
 
   @@unique([dishId, userId])
 }
+
+model CuisineWish {
+  id String @id @default(cuid())
+  ownerId String
+  name String
+  cuisine String
+  friendName String
+  friendEmail String?
+  notes String @default("")
+  triedDishIds Json @default("[]")
+  createdAt DateTime @default(now())
+  @@index([ownerId])
+}
