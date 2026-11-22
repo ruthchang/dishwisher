@@ -20,7 +20,7 @@ export async function POST(req:Request) {
       const r=await tx.restaurant.findUnique({where:{id:b.id},include:{dishes:{select:{createdById:true}}}});
       if (!r || (!admin && (!r.dishes.length || r.dishes.some(d=>d.createdById!==user.id)))) throw new Error("Restaurant requires administrator access.");
       if (b.action==="delete") {
-        if(r.dishes.length) throw new Error("Move dishes to another restaurant before deleting.");
+        await tx.dish.updateMany({where:{restaurantId:r.id},data:{restaurantId:null,customRestaurantName:r.name,customRestaurantAddress:r.address}});
         await tx.restaurant.delete({where:{id:r.id}});
       } else if (b.action==="edit") {
         const name=typeof b.name==="string"?b.name.trim():"";
