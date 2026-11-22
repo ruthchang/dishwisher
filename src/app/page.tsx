@@ -1,5 +1,7 @@
 "use client";
 
+
+import ManageRestaurants from "@/components/ManageRestaurants";
 import Image from "next/image";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
@@ -43,6 +45,7 @@ export default function Home() {
   >({});
   const [showFilters, setShowFilters] = useState(false);
   const [displayMode, setDisplayMode] = useState<"cards" | "menu">("cards");
+  const [showManageRestaurants, setShowManageRestaurants] = useState(false);
   const [collectionView, setCollectionView] = useState<
     "main" | "wishes" | "favorites" | "recommended"
   >("main");
@@ -459,6 +462,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
+      {showManageRestaurants && currentUser && <ManageRestaurants onClose={() => setShowManageRestaurants(false)} onChange={loadData} />}
       <header className="relative lg:sticky lg:top-0 z-30 border-b border-[#e7e5e4] bg-white/95 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 md:flex md:gap-4">
@@ -474,6 +478,7 @@ export default function Home() {
                   </summary>
                   <div className="absolute right-0 top-full mt-1 z-50 min-w-36 rounded-xl border border-[#e7e5e4] bg-white p-2 shadow-lg">
                     <p className="px-2 py-1 text-xs text-[#5b463f]">{currentUser.name}</p>
+                    <button onClick={() => setShowManageRestaurants(true)} className="w-full min-h-11 rounded-lg text-left px-2 text-sm font-semibold">Manage restaurants</button>
                     <button onClick={handleLogout} className="w-full min-h-11 rounded-lg text-left px-2 text-sm font-semibold hover:bg-[#f7f7f5]">Log out</button>
                   </div>
                 </details>
