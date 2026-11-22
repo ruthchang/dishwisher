@@ -22,6 +22,19 @@ export async function POST(req:Request) {
       if (b.action==="delete") {
         await tx.dish.updateMany({where:{restaurantId:r.id},data:{restaurantId:null,customRestaurantName:r.name,customRestaurantAddress:r.address}});
         await tx.restaurant.delete({where:{id:r.id}});
+      } else if (b.action==="replace-location") {
+        const match=b.match;
+        if(!match || match.provider!=="geoapify" || typeof match.id!=="string" || !match.id.trim() || match.id.length>250 || typeof match.name!=="string" || !match.name.trim() || match.name.length>200 || typeof match.address!=="string" || !match.address.trim() || match.address.length>500) throw new Error("Select a valid Geoapify result.");
+        const newId="geoapify-"+match.id;
+        const existing=await tx.restaurant.findUnique({where:{id:newId}});
+        if(existing && existing.id!==r.id) throw new Error("This Geoapify location already exists. Use Merge instead to avoid duplicates.");
+        if(newId!==r.id) {
+          await tx.restaurant.create({data:{id:newId,name:match.name.trim(),address:match.address.trim(),cuisine:r.cuisine,rating:r.rating,priceRange:r.priceRange,isUserCreated:r.isUserCreated}});
+        } else {
+          await tx.restaurant.update({where:{id:r.id},data:{name:match.name.trim(),address:match.address.trim()}});
+        }
+        await tx.dish.updateMany({where:{restaurantId:r.id},data:{restaurantId:newId,customRestaurantName:match.name.trim(),customRestaurantAddress:match.address.trim(),yelpBusinessUrl:null}});
+        if(newId!==r.id) await tx.restaurant.delete({where:{id:r.id}});
       } else if (b.action==="edit") {
         const name=typeof b.name==="string"?b.name.trim():"";
         const address=typeof b.address==="string"?b.address.trim():"";
