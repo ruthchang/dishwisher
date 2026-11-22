@@ -189,7 +189,7 @@ export default function FilterPanel({
           <label className="block text-sm font-semibold text-[#5b463f] mb-3">
             Rating Status
           </label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(["all", "rated", "unrated"] as const).map((option) => (
               <button
                 key={option}
@@ -200,7 +200,7 @@ export default function FilterPanel({
                     : "bg-[#f7f7f5] text-[#5b463f] hover:bg-[#e7e5e4] border border-[#e7e5e4]"
                 }`}
               >
-                {option}
+                {option === "unrated" ? "Not yet rated" : option}
               </button>
             ))}
           </div>
