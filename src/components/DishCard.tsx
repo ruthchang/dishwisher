@@ -116,7 +116,7 @@ export default function DishCard({
                   <span className="text-xs text-[#78716c]">({dish.reviewCount} reviews)</span>
                 </>
               ) : (
-                <span className="text-xs text-[#a8a29e] italic">Not rated</span>
+                <span className="text-xs text-[#a8a29e] italic">Not yet rated</span>
               )}
               {dish.category && (
                 <>
@@ -238,6 +238,7 @@ export default function DishCard({
                 interactive
                 onRatingChange={handleRate}
               />
+              <button type="button" aria-pressed={localUserRating === 0} onClick={() => handleRate(0)} className={`mt-2 min-h-11 px-3 rounded-lg border text-sm ${localUserRating === 0 ? "bg-[#ccfbf1] text-[#0f766e]" : "text-[#5b463f]"}`}>Not yet rated</button>
               {localUserRating > 0 && (
                 <p className="text-xs text-[#5b463f] mt-3 font-medium">
                   You rated this {localUserRating} out of 5 stars
