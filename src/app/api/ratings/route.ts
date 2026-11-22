@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 
 async function recalculateDish(dishId: string) {
   const aggregate = await db.rating.aggregate({
-    where: { dishId },
+    where: { dishId, value: { gt: 0 } },
     _avg: { value: true },
     _count: { _all: true },
   });
@@ -34,6 +34,11 @@ export async function POST(req: Request) {
   const dish = await db.dish.findUnique({ where: { id: dishId } });
   if (!dish) return NextResponse.json({ error: "Dish not found." }, { status: 404 });
 
+  if (value === 0) {
+    await db.rating.updateMany({ where: { dishId, userId: user.id }, data: { value: 0 } });
+    await recalculateDish(dishId);
+    return NextResponse.json({ ok: true });
+  }
   await db.rating.upsert({
     where: {
       dishId_userId: { dishId, userId: user.id },
