@@ -42,6 +42,7 @@ export interface DishWish {
 }
 
 export interface DishWishInput {
+  friendProfileId?: string;
   name?: string;
   restaurantName?: string;
   restaurantAddress?: string;
