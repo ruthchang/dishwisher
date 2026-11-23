@@ -15,6 +15,7 @@ export async function POST(request: Request) {
     (ownRating !== null && (!Number.isFinite(ownRating) || ownRating < 1 || ownRating > 5))) {
     return NextResponse.json({ error: "Dish, cuisine, or rating is invalid." }, { status: 400 });
   }
+  if (rating !== null && !friendProfileId) return NextResponse.json({ error: "Select a friend to record their rating." }, { status: 400 });
   if (friendProfileId) {
     const friend = await db.friendProfile.findFirst({ where: { id: friendProfileId, createdById: user.id, claimedUserId: null } });
     if (!friend) return NextResponse.json({ error: "Friend unavailable." }, { status: 404 });
