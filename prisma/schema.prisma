@@ -96,6 +96,8 @@ model DishWish {
   createdAt        DateTime @default(now())
   createdBy        User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
   linkedDish       Dish?    @relation(fields: [linkedDishId], references: [id], onDelete: SetNull)
+  friendProfileId String?
+  friendProfile FriendProfile? @relation(fields: [friendProfileId], references: [id], onDelete: SetNull)
 }
 
 model Rating {
