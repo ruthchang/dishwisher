@@ -19,6 +19,8 @@ model User {
   wishes       DishWish[]
   ratings      Rating[]
   sessions     Session[]
+  ownedFriendProfiles FriendProfile[] @relation("FriendCreator")
+  claimedFriendProfile FriendProfile? @relation("FriendClaim")
 }
 
 model Session {
@@ -63,6 +65,8 @@ model Dish {
   ratings                Rating[]
   preferences            UserDishPreference[]
   wishes                 DishWish[]
+  cuisine                String?
+  friendRatings          FriendRating[]
 }
 
 model UserDishPreference {
@@ -114,8 +118,53 @@ model CuisineWish {
   cuisine String
   friendName String
   friendEmail String?
+  friendProfileId String?
+  friendProfile FriendProfile? @relation(fields: [friendProfileId], references: [id], onDelete: SetNull)
   notes String @default("")
   triedDishIds Json @default("[]")
   createdAt DateTime @default(now())
   @@index([ownerId])
+}
+
+model FriendProfile {
+  id String @id @default(cuid())
+  displayName String
+  email String?
+  createdById String
+  claimedUserId String? @unique
+  createdAt DateTime @default(now())
+  claimedAt DateTime?
+  createdBy User @relation("FriendCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  claimedUser User? @relation("FriendClaim", fields: [claimedUserId], references: [id], onDelete: SetNull)
+  cuisineWishes CuisineWish[]
+  restaurantWishes DishWish[]
+  ratings FriendRating[]
+  invitations FriendInvitation[]
+  @@index([createdById])
+}
+
+model FriendRating {
+  id String @id @default(cuid())
+  friendProfileId String
+  dishId String
+  value Float?
+  enteredById String
+  confirmedAt DateTime?
+  createdAt DateTime @default(now())
+  friendProfile FriendProfile @relation(fields: [friendProfileId], references: [id], onDelete: Cascade)
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  @@unique([friendProfileId, dishId])
+}
+
+model FriendInvitation {
+  id String @id @default(cuid())
+  friendProfileId String
+  email String
+  tokenHash String @unique
+  expiresAt DateTime
+  acceptedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  friendProfile FriendProfile @relation(fields: [friendProfileId], references: [id], onDelete: Cascade)
+  @@index([friendProfileId])
 }
