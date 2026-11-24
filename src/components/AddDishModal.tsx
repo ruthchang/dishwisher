@@ -1,4 +1,5 @@
 "use client";
+import FriendRatingEditor from "./FriendRatingEditor";
 
 import { useState, useEffect } from "react";
 import { Dish, Restaurant } from "@/data/dishes";
@@ -835,6 +836,7 @@ export default function AddDishModal({
             </div>
           )}
 
+          {isEditing&&editingDish&&<FriendRatingEditor key={editingDish.id} dishId={editingDish.id}/>}
           {!isEditing&&<div className="space-y-2"><label className="block text-sm">Recommended by<select className="block w-full border rounded p-2" value={friendProfileId} onChange={e=>{setFriendProfileId(e.target.value);setFriendName("");setFriendRating("");}}><option value="">None or new friend</option>{friendProfiles.filter(p=>!p.claimedUserId).map(p=><option key={p.id} value={p.id}>{p.displayName}</option>)}</select></label>{!friendProfileId&&<label className="block text-sm">New friend name<input className="block w-full border rounded p-2" value={friendName} onChange={e=>{setFriendName(e.target.value);if(!e.target.value.trim())setFriendRating("");}}/></label>}{(friendProfileId||friendName.trim())&&<label className="block text-sm">Friend rating<select className="block w-full border rounded p-2" value={friendRating} onChange={e=>setFriendRating(e.target.value)}><option value="">Not yet rated</option>{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}</select></label>}</div>}
           {/* Dish Name */}
           <div>
