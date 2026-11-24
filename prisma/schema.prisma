@@ -19,6 +19,7 @@ model User {
   wishes       DishWish[]
   ratings      Rating[]
   sessions     Session[]
+  restaurantEntries RestaurantEntry[]
   ownedFriendProfiles FriendProfile[] @relation("FriendCreator")
   claimedFriendProfile FriendProfile? @relation("FriendClaim")
 }
@@ -41,6 +42,7 @@ model Restaurant {
   isUserCreated Boolean  @default(true)
   createdAt     DateTime @default(now())
   dishes        Dish[]
+  entries RestaurantEntry[]
 }
 
 model Dish {
@@ -142,6 +144,7 @@ model FriendProfile {
   restaurantWishes DishWish[]
   ratings FriendRating[]
   invitations FriendInvitation[]
+  restaurantRecommendations RestaurantRecommendation[]
   @@index([createdById])
 }
 
@@ -169,4 +172,32 @@ model FriendInvitation {
   createdAt DateTime @default(now())
   friendProfile FriendProfile @relation(fields: [friendProfileId], references: [id], onDelete: Cascade)
   @@index([friendProfileId])
+}
+
+model RestaurantEntry {
+  id String @id @default(cuid())
+  userId String
+  restaurantId String
+  visited Boolean @default(false)
+  rating Float?
+  notes String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  recommendations RestaurantRecommendation[]
+  @@unique([userId, restaurantId])
+}
+
+model RestaurantRecommendation {
+  id String @id @default(cuid())
+  entryId String
+  friendProfileId String
+  rating Float?
+  notes String @default("")
+  confirmedAt DateTime?
+  createdAt DateTime @default(now())
+  entry RestaurantEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  friendProfile FriendProfile @relation(fields: [friendProfileId], references: [id], onDelete: Cascade)
+  @@unique([entryId, friendProfileId])
 }
