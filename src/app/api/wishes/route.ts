@@ -46,6 +46,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Dish wish name is required." }, { status: 400 });
   }
 
+  const friendProfileId = typeof body.friendProfileId === "string" ? body.friendProfileId.trim() : "";
+  if (friendProfileId && !await db.friendProfile.findFirst({where:{id:friendProfileId,createdById:user.id}})) return NextResponse.json({error:"Friend unavailable."},{status:404});
   const created = await db.dishWish.create({
     data: {
       name,
@@ -55,6 +57,7 @@ export async function POST(req: Request) {
       yelpBusinessUrl: yelpBusinessUrl || null,
       createdById: user.id,
       linkedDishId,
+      friendProfileId: friendProfileId || null,
     },
   });
 

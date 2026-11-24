@@ -19,6 +19,9 @@ model User {
   wishes       DishWish[]
   ratings      Rating[]
   sessions     Session[]
+  restaurantEntries RestaurantEntry[]
+  ownedFriendProfiles FriendProfile[] @relation("FriendCreator")
+  claimedFriendProfiles FriendProfile[] @relation("FriendClaim")
 }
 
 model Session {
@@ -39,6 +42,7 @@ model Restaurant {
   isUserCreated Boolean  @default(true)
   createdAt     DateTime @default(now())
   dishes        Dish[]
+  entries RestaurantEntry[]
 }
 
 model Dish {
@@ -63,6 +67,8 @@ model Dish {
   ratings                Rating[]
   preferences            UserDishPreference[]
   wishes                 DishWish[]
+  cuisine                String?
+  friendRatings          FriendRating[]
 }
 
 model UserDishPreference {
@@ -92,6 +98,8 @@ model DishWish {
   createdAt        DateTime @default(now())
   createdBy        User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
   linkedDish       Dish?    @relation(fields: [linkedDishId], references: [id], onDelete: SetNull)
+  friendProfileId String?
+  friendProfile FriendProfile? @relation(fields: [friendProfileId], references: [id], onDelete: SetNull)
 }
 
 model Rating {
@@ -114,8 +122,83 @@ model CuisineWish {
   cuisine String
   friendName String
   friendEmail String?
+  friendProfileId String?
+  friendProfile FriendProfile? @relation(fields: [friendProfileId], references: [id], onDelete: SetNull)
   notes String @default("")
   triedDishIds Json @default("[]")
   createdAt DateTime @default(now())
   @@index([ownerId])
+}
+
+model FriendProfile {
+  id String @id @default(cuid())
+  displayName String
+  email String?
+  createdById String
+  claimedUserId String?
+  createdAt DateTime @default(now())
+  claimedAt DateTime?
+  createdBy User @relation("FriendCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  claimedUser User? @relation("FriendClaim", fields: [claimedUserId], references: [id], onDelete: SetNull)
+  cuisineWishes CuisineWish[]
+  restaurantWishes DishWish[]
+  ratings FriendRating[]
+  invitations FriendInvitation[]
+  restaurantRecommendations RestaurantRecommendation[]
+  @@index([createdById])
+  @@index([claimedUserId])
+}
+
+model FriendRating {
+  id String @id @default(cuid())
+  friendProfileId String
+  dishId String
+  value Float?
+  enteredById String
+  confirmedAt DateTime?
+  createdAt DateTime @default(now())
+  friendProfile FriendProfile @relation(fields: [friendProfileId], references: [id], onDelete: Cascade)
+  dish Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  @@unique([friendProfileId, dishId])
+}
+
+model FriendInvitation {
+  id String @id @default(cuid())
+  friendProfileId String
+  email String
+  tokenHash String @unique
+  expiresAt DateTime
+  acceptedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  friendProfile FriendProfile @relation(fields: [friendProfileId], references: [id], onDelete: Cascade)
+  @@index([friendProfileId])
+}
+
+model RestaurantEntry {
+  id String @id @default(cuid())
+  userId String
+  restaurantId String
+  visited Boolean @default(false)
+  rating Float?
+  notes String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  recommendations RestaurantRecommendation[]
+  @@unique([userId, restaurantId])
+}
+
+model RestaurantRecommendation {
+  id String @id @default(cuid())
+  entryId String
+  friendProfileId String
+  rating Float?
+  notes String @default("")
+  confirmedAt DateTime?
+  createdAt DateTime @default(now())
+  entry RestaurantEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  friendProfile FriendProfile @relation(fields: [friendProfileId], references: [id], onDelete: Cascade)
+  @@unique([entryId, friendProfileId])
 }

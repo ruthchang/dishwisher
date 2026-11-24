@@ -15,6 +15,11 @@ export async function POST(req: Request) {
   if (!body?.name || !body.restaurantId) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
   }
+  const friendId=typeof body.friendProfileId==="string"?body.friendProfileId.trim():"";
+  const friendName=typeof body.friendName==="string"?body.friendName.trim().slice(0,200):"";
+  const friendRating=body.friendRating??null;
+  if(friendRating!==null&&(!Number.isFinite(friendRating)||friendRating<1||friendRating>5||(!friendId&&!friendName)))return NextResponse.json({error:"Invalid friend rating."},{status:400});
+  if(friendId&&!await db.friendProfile.findFirst({where:{id:friendId,createdById:user.id,claimedUserId:null}}))return NextResponse.json({error:"Friend unavailable."},{status:404});
   const category = body.category?.trim() || "Uncategorized";
 
   const tags = Array.isArray(body.tags) ? body.tags : [];
@@ -69,7 +74,8 @@ export async function POST(req: Request) {
     }
   }
 
-  const dish = await db.dish.create({
+  const dish = await db.$transaction(async tx=>{
+  const dish = await tx.dish.create({
     data: {
       name: body.name.trim(),
       restaurantId,
@@ -87,14 +93,14 @@ export async function POST(req: Request) {
 
   const initialValue = body.rating && body.rating > 0 ? body.rating : 0;
   if (initialValue > 0) {
-    await db.rating.create({
+    await tx.rating.create({
       data: {
         dishId: dish.id,
         userId: user.id,
         value: initialValue,
       },
     });
-    await db.dish.update({
+    await tx.dish.update({
       where: { id: dish.id },
       data: {
         rating: initialValue,
@@ -103,5 +109,12 @@ export async function POST(req: Request) {
     });
   }
 
+  if(friendId||friendName){
+    const profile=friendId?await tx.friendProfile.findFirst({where:{id:friendId,createdById:user.id,claimedUserId:null}}):await tx.friendProfile.create({data:{displayName:friendName,createdById:user.id}});
+    if(!profile)throw Error("Friend unavailable.");
+    await tx.friendRating.create({data:{dishId:dish.id,friendProfileId:profile.id,enteredById:user.id,value:friendRating}});
+  }
+  return dish;
+  });
   return NextResponse.json({ ok: true, id: dish.id });
 }

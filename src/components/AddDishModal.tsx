@@ -1,4 +1,5 @@
 "use client";
+import FriendRatingEditor from "./FriendRatingEditor";
 
 import { useState, useEffect } from "react";
 import { Dish, Restaurant } from "@/data/dishes";
@@ -54,6 +55,11 @@ export default function AddDishModal({
 }: AddDishModalProps) {
   const [entryMode, setEntryMode] = useState<"review" | "wish">("review");
   const [name, setName] = useState("");
+  const [friendProfiles,setFriendProfiles]=useState<{id:string;displayName:string;claimedUserId:string|null}[]>([]);
+  const [friendProfileId,setFriendProfileId]=useState("");
+  const [friendName,setFriendName]=useState("");
+  const [friendRating,setFriendRating]=useState("");
+  useEffect(()=>{if(isOpen){setFriendProfileId("");setFriendName("");setFriendRating("");void fetch("/api/friends").then(r=>r.json()).then(p=>setFriendProfiles(p.profiles||[])).catch(()=>{});}},[isOpen]);
   const [restaurantId, setRestaurantId] = useState("");
   const [customRestaurant, setCustomRestaurant] = useState("");
   const [description, setDescription] = useState("");
@@ -669,6 +675,7 @@ export default function AddDishModal({
       : restaurantId;
 
     const dish: Dish = {
+      ...(!isEditing ? {friendProfileId,friendName,friendRating:friendRating===""?null:Number(friendRating)} : {}),
       id: isEditing ? editingDish.id : `user-${Date.now()}`,
       name: name.trim(),
       restaurantId: finalRestaurantId,
@@ -696,7 +703,7 @@ export default function AddDishModal({
       if (onSaveDishPreferences) {
         await Promise.resolve(
           onSaveDishPreferences(savedDishId, {
-            wishlisted,
+            wishlisted: entryMode === "wish" || wishlisted,
             favorited,
           })
         );
@@ -829,6 +836,8 @@ export default function AddDishModal({
             </div>
           )}
 
+          {isEditing&&editingDish&&<FriendRatingEditor key={editingDish.id} dishId={editingDish.id}/>}
+          {!isEditing&&<div className="space-y-2"><label className="block text-sm">Recommended by<select className="block w-full border rounded p-2" value={friendProfileId} onChange={e=>{setFriendProfileId(e.target.value);setFriendName("");setFriendRating("");}}><option value="">None or new friend</option>{friendProfiles.filter(p=>!p.claimedUserId).map(p=><option key={p.id} value={p.id}>{p.displayName}</option>)}</select></label>{!friendProfileId&&<label className="block text-sm">New friend name<input className="block w-full border rounded p-2" value={friendName} onChange={e=>{setFriendName(e.target.value);if(!e.target.value.trim())setFriendRating("");}}/></label>}{(friendProfileId||friendName.trim())&&<label className="block text-sm">Friend rating<select className="block w-full border rounded p-2" value={friendRating} onChange={e=>setFriendRating(e.target.value)}><option value="">Not yet rated</option>{[1,2,3,4,5].map(n=><option key={n}>{n}</option>)}</select></label>}</div>}
           {/* Dish Name */}
           <div>
             <label

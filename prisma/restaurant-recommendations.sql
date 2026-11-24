@@ -1,0 +1,5 @@
+CREATE TABLE "RestaurantEntry" ("id" TEXT PRIMARY KEY,"userId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,"restaurantId" TEXT NOT NULL REFERENCES "Restaurant"("id") ON DELETE CASCADE,"visited" BOOLEAN NOT NULL DEFAULT false,"rating" DOUBLE PRECISION CHECK ("rating" BETWEEN 1 AND 5),"notes" TEXT NOT NULL DEFAULT '',"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE("userId","restaurantId"));
+CREATE TABLE "RestaurantRecommendation" ("id" TEXT PRIMARY KEY,"entryId" TEXT NOT NULL REFERENCES "RestaurantEntry"("id") ON DELETE CASCADE,"friendProfileId" TEXT NOT NULL REFERENCES "FriendProfile"("id") ON DELETE CASCADE,"rating" DOUBLE PRECISION CHECK ("rating" BETWEEN 1 AND 5),"notes" TEXT NOT NULL DEFAULT '',"confirmedAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE("entryId","friendProfileId"));
+ALTER TABLE "RestaurantEntry" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "RestaurantRecommendation" ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON "RestaurantEntry","RestaurantRecommendation" FROM anon,authenticated;
