@@ -8,6 +8,9 @@ export interface Restaurant {
 }
 
 export interface Dish {
+  friendProfileId?: string;
+  friendName?: string;
+  friendRating?: number | null;
   id: string;
   name: string;
   restaurantId: string;
