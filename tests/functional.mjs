@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import {PrismaClient} from '@prisma/client';
+import {randomBytes,createHash} from 'node:crypto';
 import {test} from 'node:test';
 const base='http://127.0.0.1:3000';
 async function call(path,body,cookie,status=200){
@@ -52,4 +54,33 @@ test('recommendation lifecycle and account isolation',async()=>{
  assert.equal(updated.length,2);assert.equal(updated.find(r=>r.friendProfile.id===friendProfileId).value,2);assert.equal(updated.find(r=>r.friendProfile.id===second).value,null);
  await call('/api/wishes',{name:'Test wish',restaurantName:'Test restaurant',friendProfileId},cookie);
  assert.equal((await call('/api/restaurants/entries',undefined,b.cookie)).data.entries.length,0);
+ const db=new PrismaClient();
+ try{
+ assert.match(process.env.DATABASE_URL,/^postgresql:\/\/test:test@127\.0\.0\.1:5432\/dishwisher_test$/);
+ const seed=async(extra={})=>{const token=randomBytes(32).toString('hex');await db.friendInvitation.create({data:{friendProfileId,email:'b@example.test',tokenHash:createHash('sha256').update(token).digest('hex'),expiresAt:new Date(Date.now()+3600000),...extra}});return token;};
+ const review='/api/friends/invitations/review',accept='/api/friends/invitations/accept';
+ const expired=await seed({expiresAt:new Date(0)}),revoked=await seed({revokedAt:new Date()});
+ for(const token of [expired,revoked]){await call(review,{token},b.cookie,404);await call(accept,{token,selected:[]},b.cookie,409);}
+ const token=await seed();
+ await call(review,{token},undefined,401);
+ await call(review,{token},cookie,404);
+ await call(accept,{token,selected:[]},cookie,409);
+ const data=(await call(review,{token},b.cookie)).data;
+ assert.equal(data.ratings.length,2);
+ assert.equal(data.restaurants.length,1);
+ assert.ok(!JSON.stringify(data).includes('Updated"'));
+ const selected=[...data.ratings.map(x=>x.id),...data.restaurants.map(x=>x.id),...data.cuisineWishes.map(x=>x.id)];
+ await call(accept,{token,selected:[...selected,'invalid-id']},b.cookie,409);
+ assert.equal((await db.friendProfile.findUnique({where:{id:friendProfileId}})).claimedUserId,null);
+ const recipient=await db.user.findUnique({where:{email:'b@example.test'}});
+ await db.rating.create({data:{dishId:restaurantDish.id,userId:recipient.id,value:4}});
+ const result=(await call(accept,{token,selected},b.cookie)).data;
+ assert.equal(result.imported,selected.length);
+ assert.equal((await db.rating.findUnique({where:{dishId_userId:{dishId:restaurantDish.id,userId:recipient.id}}})).value,4);
+ assert.equal((await db.friendProfile.findUnique({where:{id:friendProfileId}})).claimedUserId,recipient.id);
+ assert.equal(await db.dishWish.count({where:{createdById:recipient.id}}),0);
+ assert.equal(await db.cuisineWish.count({where:{ownerId:recipient.id}}),1);
+ await call(accept,{token,selected},b.cookie,409);
+ assert.equal(await db.cuisineWish.count({where:{ownerId:recipient.id}}),1);
+ }finally{await db.$disconnect();}
 });
