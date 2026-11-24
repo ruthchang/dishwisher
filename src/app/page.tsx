@@ -2,6 +2,7 @@
 
 
 import CuisineWishes from "@/components/CuisineWishes";
+import RestaurantEntries from "@/components/RestaurantEntries";
 import ManageRestaurants from "@/components/ManageRestaurants";
 import Image from "next/image";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
@@ -532,7 +533,7 @@ export default function Home() {
           <p className="text-xs text-[#5b463f]">{filteredAndSortedDishes.length} {filteredAndSortedDishes.length === 1 ? "dish" : "dishes"}</p>
         </div>
 
-        {collectionView === "wishes" && currentUser && <CuisineWishes />}
+        {collectionView === "wishes" && currentUser && <><RestaurantEntries /><CuisineWishes /></>}
         {collectionView === "wishes" || collectionView === "favorites" || collectionView === "recommended" ? (
           !currentUser ? (
             <div className="panel-card rounded-xl p-10 text-center">
