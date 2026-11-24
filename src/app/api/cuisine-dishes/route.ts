@@ -36,3 +36,23 @@ export async function POST(request: Request) {
   });
   return NextResponse.json({ ok: true, id: dish.id }, { status: 201 });
 }
+
+export async function PATCH(request: Request) {
+ const user=await getCurrentUser();
+ if(!user)return NextResponse.json({error:"Unauthorized"},{status:401});
+ const b=await request.json().catch(()=>null);
+ const name=typeof b?.name==="string"?b.name.trim().slice(0,200):"";
+ const cuisine=typeof b?.cuisine==="string"?b.cuisine.trim().slice(0,100):"";
+ const rating=b?.rating==null||b.rating===""?null:Number(b.rating);
+ if(!b?.id||!name||!cuisine||(rating!==null&&(!Number.isFinite(rating)||rating<1||rating>5)))return NextResponse.json({error:"Invalid dish or rating"},{status:400});
+ const result=await db.$transaction(async tx=>{
+ const dish=await tx.dish.findFirst({where:{id:b.id,createdById:user.id,restaurantId:null,customRestaurantName:null,cuisine:{not:null}}});
+ if(!dish)return false;
+ if(rating===null)await tx.rating.deleteMany({where:{dishId:dish.id,userId:user.id}});
+ else await tx.rating.upsert({where:{dishId_userId:{dishId:dish.id,userId:user.id}},create:{dishId:dish.id,userId:user.id,value:rating},update:{value:rating}});
+ const aggregate=await tx.rating.aggregate({where:{dishId:dish.id},_avg:{value:true},_count:{value:true}});
+ await tx.dish.update({where:{id:dish.id},data:{name,cuisine,description:typeof b.notes==="string"?b.notes.trim().slice(0,2000):"",rating:aggregate._avg.value??0,reviewCount:aggregate._count.value}});
+ return true;
+ });
+ return result?NextResponse.json({ok:true}):NextResponse.json({error:"Dish unavailable"},{status:404});
+}
