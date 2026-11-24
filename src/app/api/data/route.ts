@@ -47,7 +47,7 @@ const DEFAULT_TAGS = [
 export async function GET() {
   const user = await getCurrentUser();
   const [dishes, restaurants, myRatings, wishes, preferences] = await Promise.all([
-    db.dish.findMany({ orderBy: { createdAt: "desc" } }),
+    db.dish.findMany({ where: { OR: [{ cuisine: null }, { restaurantId: { not: null } }, { customRestaurantName: { not: null } }] }, orderBy: { createdAt: "desc" } }),
     db.restaurant.findMany({ orderBy: { name: "asc" } }),
     user
       ? db.rating.findMany({ where: { userId: user.id } })
