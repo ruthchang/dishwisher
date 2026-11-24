@@ -14,6 +14,15 @@ test('recommendation lifecycle and account isolation',async()=>{
  await call('/api/friends',undefined,undefined,401);
  const {data:{profile}}=await call('/api/friends',{displayName:'Test friend'},cookie,201);
  const friendProfileId=profile.id;
+ await call('/api/friends/invitations',{friendProfileId,email:'friend@example.test'},undefined,401);
+ await call('/api/friends/invitations',{friendProfileId,email:'friend@example.test'},b.cookie,404);
+ await call('/api/friends/invitations',{friendProfileId,email:'invalid'},cookie,400);
+ const invite=(await call('/api/friends/invitations',{friendProfileId,email:'friend@example.test'},cookie,201)).data;
+ assert.match(invite.token,/^[a-f0-9]{64}$/);
+ assert.ok(Date.parse(invite.expiresAt)>Date.now()+6*86400000);
+ const replacement=(await call('/api/friends/invitations',{friendProfileId,email:'friend@example.test'},cookie,201)).data;
+ assert.notEqual(invite.token,replacement.token);
+ await call('/api/friends/invitations',{friendProfileId,action:'revoke'},cookie);
  await call('/api/cuisine-wishes',{name:'Sweet',cuisine:'Indian',friendProfileId},cookie);
  const wishes=(await call('/api/cuisine-wishes',undefined,cookie)).data.wishes;
  assert.equal(wishes[0].friendProfileId,friendProfileId);
