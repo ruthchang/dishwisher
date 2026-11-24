@@ -21,7 +21,7 @@ model User {
   sessions     Session[]
   restaurantEntries RestaurantEntry[]
   ownedFriendProfiles FriendProfile[] @relation("FriendCreator")
-  claimedFriendProfile FriendProfile? @relation("FriendClaim")
+  claimedFriendProfiles FriendProfile[] @relation("FriendClaim")
 }
 
 model Session {
@@ -135,7 +135,7 @@ model FriendProfile {
   displayName String
   email String?
   createdById String
-  claimedUserId String? @unique
+  claimedUserId String?
   createdAt DateTime @default(now())
   claimedAt DateTime?
   createdBy User @relation("FriendCreator", fields: [createdById], references: [id], onDelete: Cascade)
@@ -146,6 +146,7 @@ model FriendProfile {
   invitations FriendInvitation[]
   restaurantRecommendations RestaurantRecommendation[]
   @@index([createdById])
+  @@index([claimedUserId])
 }
 
 model FriendRating {
