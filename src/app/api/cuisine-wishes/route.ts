@@ -3,7 +3,7 @@ import {getCurrentUser} from "@/lib/auth";
 import {db} from "@/lib/db";
 export async function GET(){
  const u=await getCurrentUser();if(!u)return NextResponse.json({error:"Unauthorized"},{status:401});
- try{return NextResponse.json({wishes:await db.cuisineWish.findMany({where:{ownerId:u.id},orderBy:{createdAt:"desc"}}),dishes:await db.dish.findMany({where:{createdById:u.id},select:{id:true,name:true,restaurant:{select:{name:true}}}})});}
+ try{return NextResponse.json({wishes:await db.cuisineWish.findMany({where:{ownerId:u.id},orderBy:{createdAt:"desc"}}),dishes:await db.dish.findMany({where:{createdById:u.id},select:{id:true,name:true,cuisine:true,description:true,restaurant:{select:{name:true}},ratings:{where:{userId:u.id},select:{value:true}},friendRatings:{where:{friendProfile:{createdById:u.id}},select:{value:true,friendProfile:{select:{displayName:true}}}}}})});}
  catch{return NextResponse.json({error:"Cuisine wishes database is not ready."},{status:503});}
 }
 export async function POST(req:Request){
