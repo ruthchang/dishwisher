@@ -24,6 +24,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://test:test@127.0.0.1:5432/dishwisher_test
+      ENABLE_VERIFIED_FRIEND_CLAIMS: 'true'
       DIRECT_URL: postgresql://test:test@127.0.0.1:5432/dishwisher_test
     steps:
       - uses: actions/checkout@v4
