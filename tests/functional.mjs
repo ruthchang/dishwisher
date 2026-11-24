@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+const base='http://127.0.0.1:3000';
+async function call(path,body,cookie,status=200){
+ const r=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
+ const data=await r.json();assert.equal(r.status,status,path+' '+JSON.stringify(data));return {data,cookie:r.headers.get('set-cookie')?.split(';')[0]};
+}
+test('recommendation lifecycle and account isolation',async()=>{
+ const password='test-only-password-123';
+ const a=await call('/api/auth/register',{name:'Test A',email:'a@example.test',password});
+ const b=await call('/api/auth/register',{name:'Test B',email:'b@example.test',password});
+ const {cookie}=await call('/api/auth/login',{email:'a@example.test',password});
+ assert.ok(cookie);
+ await call('/api/friends',undefined,undefined,401);
+ const {data:{profile}}=await call('/api/friends',{displayName:'Test friend'},cookie,201);
+ const friendProfileId=profile.id;
+ await call('/api/cuisine-wishes',{name:'Sweet',cuisine:'Indian',friendProfileId},cookie);
+ const wishes=(await call('/api/cuisine-wishes',undefined,cookie)).data.wishes;
+ assert.equal(wishes[0].friendProfileId,friendProfileId);
+ assert.equal((await call('/api/cuisine-wishes',undefined,b.cookie)).data.wishes.length,0);
+ const dish=(await call('/api/cuisine-dishes',{name:'Sweet',cuisine:'Indian',friendProfileId,friendRating:5,rating:4},cookie,201)).data;
+ await call('/api/cuisine-wishes',{action:'link',id:wishes[0].id,dishId:dish.id},cookie);
+ const linked=(await call('/api/cuisine-wishes',undefined,cookie)).data;
+ assert.ok(linked.wishes[0].triedDishIds.includes(dish.id));
+ assert.equal(linked.dishes.find(d=>d.id===dish.id).ratings[0].value,4);
+ assert.equal(linked.dishes.find(d=>d.id===dish.id).friendRatings[0].value,5);
+ await call('/api/friends/ratings',{dishId:dish.id,friendProfileId,rating:3},b.cookie,404);
+ await call('/api/restaurants/entries',{name:'Test restaurant',address:'Test address',visited:false,friendProfileId,friendRating:5},cookie);
+ const entry=(await call('/api/restaurants/entries',undefined,cookie)).data.entries[0];
+ await call('/api/restaurants/entries',{restaurantId:entry.restaurantId,visited:true,rating:4},cookie);
+ const visited=(await call('/api/restaurants/entries',undefined,cookie)).data.entries[0];
+ assert.equal(visited.visited,true);assert.equal(visited.rating,4);assert.equal(visited.recommendations[0].rating,5);
+ const restaurantDish=(await call('/api/dishes',{name:'Test dish',restaurantId:entry.restaurantId,rating:4,friendProfileId,friendRating:5},cookie)).data;
+ const ratings=(await call('/api/friends/ratings?dishId='+restaurantDish.id,undefined,cookie)).data.ratings;
+ assert.equal(ratings[0].value,5);
+ await call('/api/wishes',{name:'Test wish',restaurantName:'Test restaurant',friendProfileId},cookie);
+ assert.equal((await call('/api/restaurants/entries',undefined,b.cookie)).data.entries.length,0);
+});
