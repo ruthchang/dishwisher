@@ -24,6 +24,11 @@ test('recommendation lifecycle and account isolation',async()=>{
  assert.ok(linked.wishes[0].triedDishIds.includes(dish.id));
  assert.equal(linked.dishes.find(d=>d.id===dish.id).ratings[0].value,4);
  assert.equal(linked.dishes.find(d=>d.id===dish.id).friendRatings[0].value,5);
+ const edit=async(c,status,rating)=>{const r=await fetch(base+'/api/cuisine-dishes',{method:'PATCH',headers:{'Content-Type':'application/json',Cookie:c},body:JSON.stringify({id:dish.id,name:'Updated sweet',cuisine:'Indian',notes:'Updated',rating})});assert.equal(r.status,status);};
+ await edit(b.cookie,404,3);
+ await edit(cookie,200,null);
+ const edited=(await call('/api/cuisine-wishes',undefined,cookie)).data.dishes.find(d=>d.id===dish.id);
+ assert.equal(edited.name,'Updated sweet');assert.equal(edited.ratings.length,0);assert.equal(edited.friendRatings[0].value,5);
  await call('/api/friends/ratings',{dishId:dish.id,friendProfileId,rating:3},b.cookie,404);
  await call('/api/restaurants/entries',{name:'Test restaurant',address:'Test address',visited:false,friendProfileId,friendRating:5},cookie);
  const entry=(await call('/api/restaurants/entries',undefined,cookie)).data.entries[0];
